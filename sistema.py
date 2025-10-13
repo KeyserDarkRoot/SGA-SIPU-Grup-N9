@@ -82,7 +82,21 @@ class Sede:
 
 
 class Laboratorio:
-    pass
+        def _init_(self, idLaboratorio, nombre, capacidad, estado):
+            self.idLaboratorio = idLaboratorio
+            self.nombre = nombre
+            self.capacidad = capacidad
+            self.estado = estado
+        
+        def reservar(self):
+            if self.estado == "disponible" :
+                self.estado = "ocupado"
+                print(f"Laboratorio {self.nombre} (ID: {self.idLaboratorio}) ha sido reservado)")
+                return True
+            else: 
+                print(f"Laboratorio {self.nombre} esta disponible")
+            return False
+        
 
 
 class Aspirante:
@@ -121,6 +135,7 @@ class Evaluacion:
         print("Generando certificados de evaluacion....")
 
 
+
 class Puntaje:
     def __init__(self,puntaje_examen,puntaje_bachillerato,puntaje_accion_afirmativa,total):
         self.puntaje_examen = puntaje_examen
@@ -142,9 +157,31 @@ class Puntaje:
 
 
 class Monitor:
-    pass
+     def _init_(self, idMonitor, nombre, carga_asignada):
+        self.idMonitor = idMonitor
+        self.nombre = nombre
+        self.carga_asignada = carga_asignada
+        
+        
+        def asignar_aspirante(self):
+            print(f"Aspirante asignado al monitor {self.nombre}")
+        
+        def verificar_carga(self):
+            print(f"Total de aspirantes asignados del monitor {self.nombre} :  {self.carga_asignada} ")
+    
+    
 
 
 
 class Notificacion:
-    pass
+     def _init_(self, idNotificacion, mensaje, fecha_envio, estado):
+        self.__idNotificacion = idNotificacion
+        self.mensaje = mensaje
+        self.fecha_envio = fecha_envio
+        self.estado = estado
+        
+        def enviar(self):
+            print("Enviando correo al aspirante: ")
+            def marcarLeido(self):
+                print("Marcando correo como leído ")
+                
