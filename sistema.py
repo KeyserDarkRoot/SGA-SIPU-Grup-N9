@@ -104,12 +104,43 @@ class Aspirante:
 
 
 class Postulacion:
-    pass
+    def __init__(self, idPostulacion,opcionesCarrera,prioridad,carreraSeleccionada):
+        self.idPostulacion = idPostulacion
+        self.opcionesCarrera = opcionesCarrera
+        self.prioridad = prioridad
+        self.carreraSeleccionada = carreraSeleccionada
 
+    def registrarOpciones(self):
+        print("ERegistro exitoso")
+
+    def calcularPuntajeFinal(self):
+        print("Calculando puntaje.")
+
+    def GenerarCertificadoPostulacion(self):
+        print("Generando certificados de evaluacion....")
 
 class Inscripcion:
-    pass
+    def __init__(self, id_inscripcion,fecha_inscripcion,periodo,carrera_seleccionada,estado):
+        self.id_inscripcion = id_inscripcion
+        self.fecha = fecha_inscripcion
+        self.periodo = periodo
+        self.carrera_seleccionada = carrera_seleccionada
+        self.estado = estado
 
+    def registrarInscripcion(self):
+        print("Registro exitoso.")
+
+    def validarPeriodo(self,):
+        print("validacion de periodo")
+
+    def consultarHistorial(self,):
+        print("Consulta exitosa.")
+
+    def generarCertificados(self):
+        print("Generando certificados de inscripcion....")
+
+    def consultarInscripcion(sel):
+        print("consulta exitosa")
 
 class Evaluacion:
     def __init__(self, id_inscripcion,fecha_inscripcion,periodo,especialidad,modalidad,campo_conocimiento):
@@ -135,7 +166,6 @@ class Evaluacion:
         print("Generando certificados de evaluacion....")
 
 
-
 class Puntaje:
     def __init__(self,puntaje_examen,puntaje_bachillerato,puntaje_accion_afirmativa,total):
         self.puntaje_examen = puntaje_examen
@@ -148,13 +178,6 @@ class Puntaje:
 
     def aplicar_accion_afirmativa(self):
         print("Aplicando accion afirmativa...")
-
-    
-    
-
-
-    
-
 
 class Monitor:
      def _init_(self, idMonitor, nombre, carga_asignada):
@@ -169,10 +192,6 @@ class Monitor:
         def verificar_carga(self):
             print(f"Total de aspirantes asignados del monitor {self.nombre} :  {self.carga_asignada} ")
     
-    
-
-
-
 class Notificacion:
      def _init_(self, idNotificacion, mensaje, fecha_envio, estado):
         self.__idNotificacion = idNotificacion
