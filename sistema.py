@@ -2,6 +2,21 @@ class RegistroNacional:
     pass
 
 
+class Universidad:
+    def __init__(self, idUniversidad, nombre, direccion, sedes):
+        self.__idUniversidad = idUniversidad
+        self.nombre = nombre
+        self.direccion = direccion
+        self.sedes = sedes
+
+    def cargarOferta():
+        print("Cargando oferta académica...")
+
+    def asignarSede():
+        print("Asigando sedes...")
+
+    def notificarAspirantes():
+        print("Enviando notificaciones a los aspirantes...")
 
 class Carrera:
     def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, cuposDisponibles):
@@ -48,28 +63,27 @@ class Periodo:
 
 
 class Sede:
-    pass
+    def __init__(self,id_sede, nombre_sede, direccion, capacidad,laboratorio):
+        self.id_sede = id_sede
+        self.nombre_sede = nombre_sede
+        self.direccion = direccion
+        self.capacidad = capacidad
+        self.laboratorio = []
+
+    def verificar_disponibilidad(self):
+        print("Verificando si hay espacio en la sede...")
+
+    def asignar_laboratorio(self,laboratorio):
+        print("Asignando laboratorios...")
+
+    def listar_jornadas(self):
+        print("Listando jornadas para el uso de los laboratorios...")
+    
 
 
 class Laboratorio:
-    def __init__(self, idLaboratorio, nombre, capacidad, estado):
-        self.idLaboratorio = idLaboratorio
-        self.nombre = nombre
-        self.capacidad = capacidad
-        self.estado = estado
-        
-    def reservar(self):
-        if self.estado == "disponible" :
-            self.estado = "ocupado"
-            print(f"Laboratorio {self.nombre} (ID: {self.idLaboratorio}) ha sido reservado)")
-            return True
-        else:
-            print(f"Laboratorio {self.nombre} esta disponible")
-            return False
-        
-        
-        
-        
+    pass
+
 
 class Aspirante:
     pass
@@ -84,8 +98,6 @@ class Inscripcion:
 
 
 class Evaluacion:
-<<<<<<< HEAD
-=======
     def __init__(self, id_inscripcion,fecha_inscripcion,periodo,especialidad,modalidad,campo_conocimiento):
         self.id_inscripcion = id_inscripcion
         self.fecha = fecha_inscripcion
@@ -126,48 +138,13 @@ class Puntaje:
     
 
 
-
     
 
 
 class Monitor:
->>>>>>> keyser
     pass
 
 
-<<<<<<< HEAD
-=======
-class Puntaje:
-    pass
-
-
-class Monitor:
-    def __init__(self, idMonitor, nombre, carga_asignada):
-        self.idMonitor = idMonitor
-        self.nombre = nombre
-        self.carga_asignada = carga_asignada
-        
-        
-    def asignar_aspirante(self):
-        print(f"Aspirante asignado al monitor {self.nombre}")
-        
-    def verificar_carga(self):
-        print(f"Total de aspirantes asignados del monitor {self.nombre} :  {self.carga_asignada} ")
-        
-    
-    
->>>>>>> 039d5c8be6396801a20810dc80a1f8e2adad99b0
 
 class Notificacion:
-    def __init__(self, idNotificacion, mensaje, fecha_envio, estado):
-        self.__idNotificacion = idNotificacion
-        self.mensaje = mensaje
-        self.fecha_envio = fecha_envio
-        self.estado = estado
-        
-    def enviar(self):
-        print("Enviando correo al aspirante: ")
-    
-    def marcarLeido(self):
-        print("Marcando correo como leído ")
-        
+    pass
