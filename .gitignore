@@ -12,8 +12,8 @@ ENV/
 Pipfile.lock
 
 # Archivos de configuración sensibles
-conexion DB/config_db.json
-config_db.json
+ConexionBD
+config_DB.json
 *.env
 .env*
 
@@ -45,6 +45,3 @@ supabase/.env.local
 
 # Archivos del sistema operativo
 desktop.ini
-
-#Archivos de ejemplo permitidos (plantillas)
-!conexion DB/config_db.example.json
