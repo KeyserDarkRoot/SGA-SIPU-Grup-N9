@@ -13,6 +13,7 @@ Pipfile.lock
 
 # Archivos de configuración sensibles
 ConexionBD
+Datos_RegistroNacional
 *.env
 .env*
 
