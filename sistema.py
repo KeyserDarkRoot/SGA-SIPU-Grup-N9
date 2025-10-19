@@ -1,7 +1,3 @@
-class RegistroNacional:
-    pass
-
-
 class Universidad:
     def __init__(self, idUniversidad, nombre, direccion, sedes):
         self.__idUniversidad = idUniversidad
