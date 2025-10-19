@@ -13,7 +13,6 @@ Pipfile.lock
 
 # Archivos de configuración sensibles
 ConexionBD
-config_DB.json
 *.env
 .env*
 
