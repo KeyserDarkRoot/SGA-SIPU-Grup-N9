@@ -1,0 +1,47 @@
+
+# --- Archivos de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de entorno virtual (venv, pipenv) 
+venv/
+env/
+.venv/
+ENV/
+Pipfile.lock
+
+# Archivos de configuración sensibles
+ConexionBD
+Datos_RegistroNacional
+*.env
+.env*
+
+# Archivos temporales o locales
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Configuración del entorno de desarrollo
+.vscode/
+.idea/
+
+# Archivos de sistema o cache de dependencias 
+dist/
+build/
+*.egg-info/
+.eggs/
+*.spec
+
+# Archivos de notebooks temporales
+.ipynb_checkpoints/
+
+# Archivos específicos de Supabase
+supabase/.temp/
+supabase/.cache/
+supabase/.env.local
+
+# Archivos del sistema operativo
+desktop.ini
