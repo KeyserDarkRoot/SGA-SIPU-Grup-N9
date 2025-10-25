@@ -18,5 +18,8 @@ class Inscripcion:
     def generarCertificados(self):
         print("Generando certificados de inscripcion....")
 
-    def consultarInscripcion(sel):
-        print("consulta exitosa")
+    def consultarInscripcion(self):
+        print(f"Inscripción a {self.carrera_seleccionada} en periodo {self.periodo}")
+
+    def __str__(self):
+        return f"Inscripción {self.id_inscripcion} - {self.carrera_seleccionada} ({self.estado})"

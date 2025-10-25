@@ -5,8 +5,11 @@ class Puntaje:
         self.puntaje_accion_afirmativa = puntaje_accion_afirmativa
         self.total = total
 
-    def Calcular_total(self):
-        print("Calculando puntaje total...")
+    def calcular_total(self):
+        self.total = self.puntaje_examen + self.puntaje_bachillerato + self.puntaje_accion_afirmativa
+        print(f"Puntaje total: {self.total}")
+        return self.total
 
-    def aplicar_accion_afirmativa(self):
-        print("Aplicando accion afirmativa...")
+    def aplicar_accion_afirmativa(self, porcentaje_extra):
+        self.puntaje_accion_afirmativa = self.puntaje_bachillerato * porcentaje_extra
+        print(f"Acción afirmativa aplicada: {self.puntaje_accion_afirmativa}")
