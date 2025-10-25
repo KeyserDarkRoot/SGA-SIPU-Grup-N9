@@ -9,14 +9,17 @@ class Evaluacion:
         self.resultado = None
         self.sede = None
     
-    def programar(self,nueva_fecha):
-        print("Evaluacion programada para {self.fecha_inscripcion}")
+    def programar(self, nueva_fecha):
+        self.fecha = nueva_fecha
+        print(f"Evaluación programada para {self.fecha}")
 
-    def asignar_sede(self,sede):
-        print("Asignando sede...")
+    def asignar_sede(self, sede):
+        self.sede = sede
+        print(f"Sede asignada: {self.sede.nombre_sede}")
 
-    def registrar_resultados(self,resultado):
-        print("Registrando resultados...")
+    def registrar_resultados(self, resultado):
+        self.resultado = resultado
+        print(f"Resultado registrado: {self.resultado}")
 
     def generar_certificados(self):
         print("Generando certificados de evaluacion....")
