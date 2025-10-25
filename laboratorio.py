@@ -1,5 +1,5 @@
 class Laboratorio:
-        def _init_(self, idLaboratorio, nombre, capacidad, estado):
+        def __init__(self, idLaboratorio, nombre, capacidad, estado):
             self.idLaboratorio = idLaboratorio
             self.nombre = nombre
             self.capacidad = capacidad
