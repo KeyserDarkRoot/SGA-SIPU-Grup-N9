@@ -7,7 +7,8 @@ class Carrera:
         self.cuposDisponibles = cuposDisponibles
 
     def asignarCupos(self, numero):
-        print(f"Asiganado {numero} cupos")
+        self.cuposDisponibles += numero
+        print(f"Asignado {numero} cupos a {self.nombreCarrera}")
 
     def obtenerinfo(self):
-        print("Obteniendo información de carrera...")
+        return f"{self.nombreCarrera} - {self.facultad} ({self.modalidad})"
