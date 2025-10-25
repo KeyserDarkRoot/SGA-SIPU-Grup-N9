@@ -8,8 +8,8 @@ class Aspirante:
         self.telefono = telefono
         self.fecha_nacimiento = fecha_nacimiento
         self.nota_bachillerato = float(nota_bachillerato)
-        self.puntaje_examen = 0.0
-        self.puntaje_postulacion = 0.0
+        self.puntaje_examen = None
+        self.puntaje_postulacion = None
 
     def registrar(self):
         print(f"Aspirante {self.nombres} {self.apellidos} registrado con cédula {self.cedula}")
@@ -19,9 +19,10 @@ class Aspirante:
         self.telefono = nuevo_telefono
         print(f"Contacto actualizado: {self.correo}, {self.telefono}")
 
-    def calcular_puntaje(self, puntaje_examen):
+    def calcular_puntaje(self, puntaje_examen, porcentaje_bachillerato, porcentaje_examen):
         self.puntaje_examen = float(puntaje_examen)
-        self.puntaje_postulacion = (self.nota_bachillerato * 0.4) + (self.puntaje_examen * 0.6)
+        self.puntaje_postulacion = (self.nota_bachillerato * porcentaje_bachillerato) + \
+                                   (self.puntaje_examen * porcentaje_examen)
         print(f"Puntaje total de {self.nombres}: {self.puntaje_postulacion}")
         return self.puntaje_postulacion
 
