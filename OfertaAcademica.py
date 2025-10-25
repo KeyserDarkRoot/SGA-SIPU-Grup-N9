@@ -14,8 +14,9 @@ class OfertaAcademica:
     def eliminarCarrera(self, carrera):
         print("Eliminando carrera de la oferta")
 
-    def listarCarrera():
-        print("Mostrando carreras enlistadas")
+    def listarCarrera(self):
+        for carrera in self.carreras:
+            print(f"- {carrera.nombreCarrera}")
 
     def consultarDisponibilidad(self, carrera):
         print("Consultando disponibilidad de la carrera...")
