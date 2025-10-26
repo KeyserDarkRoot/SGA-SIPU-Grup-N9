@@ -2,12 +2,12 @@ from datetime import datetime
 import uuid
 
 class Inscripcion:
-    def __init__(self, periodo_id, ies_id, tipo_documento, documento, nombres, apellidos, carrera_seleccionada, fecha_inscripcion=None, estado="registrado"):
+    def __init__(self, periodo_id, ies_id, tipo_documento, identificacion, nombres, apellidos, carrera_seleccionada, fecha_inscripcion=None, estado="registrado"):
         self.id_inscripcion = str(uuid.uuid4())  # ID único
         self.periodo_id = periodo_id
         self.ies_id = ies_id
         self.tipo_documento = tipo_documento
-        self.documento = documento
+        self.identificacion = identificacion
         self.nombres = nombres
         self.apellidos = apellidos
         self.carrera_seleccionada = carrera_seleccionada
@@ -21,7 +21,7 @@ class Inscripcion:
         try:
             resultado = cliente_supabase.table("registronacional") \
                 .select("identificacion") \
-                .eq("identificacion", self.documento) \
+                .eq("identificacion", self.identificacion) \
                 .execute()
 
             if resultado.data:
@@ -39,7 +39,7 @@ class Inscripcion:
             "PERIODO_ID": self.periodo_id,
             "IES_ID": self.ies_id,
             "TIPO_DOCUMENTO": self.tipo_documento,
-            "DOCUMENTO": self.documento,
+            "IDENTIFICACION": self.identificacion,
             "NOMBRES": self.nombres,
             "APELLIDOS": self.apellidos,
             "FECHA_INSCRIPCION": self.fecha_inscripcion,
