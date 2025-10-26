@@ -35,17 +35,17 @@ class Inscripcion:
 
     def guardar_en_supabase(self, cliente_supabase):
         datos = {
-            "ID_INSCRIPCION": self.id_inscripcion,
-            "PERIODO_ID": self.periodo_id,
-            "IES_ID": self.ies_id,
-            "TIPO_DOCUMENTO": self.tipo_documento,
-            "IDENTIFICACION": self.identificacion,
-            "NOMBRES": self.nombres,
-            "APELLIDOS": self.apellidos,
-            "FECHA_INSCRIPCION": self.fecha_inscripcion,
-            "CARRERA_SELECCIONADA": self.carrera_seleccionada,
-            "ESTADO": self.estado
+            "periodo_id": self.periodo_id,
+            "ies_id": self.ies_id,
+            "tipo_documento": self.tipo_documento,
+            "identificacion": self.identificacion,
+            "nombres": self.nombres,
+            "apellidos": self.apellidos,
+            "fecha_inscripcion": self.fecha_inscripcion,
+            "carrera_seleccionada": self.carrera_seleccionada,
+            "estado": self.estado
         }
+
 
         try:
             cliente_supabase.table("inscripciones").insert(datos).execute()
@@ -58,7 +58,7 @@ class Inscripcion:
         print("Registro exitoso.")
 
     def generar_certificado(self):
-        print(f"Certificado generado para {self.nombres} {self.apellidos} - Documento: {self.documento}")
+        print(f"Certificado generado para {self.nombres} {self.apellidos} - Identificación: {self.identificacion}")
 
     def consultarHistorial(self):
         print("Consulta de historial exitosa.")
