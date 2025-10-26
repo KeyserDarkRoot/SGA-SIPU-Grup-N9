@@ -1,4 +1,16 @@
-class Inscripcion:
+from abc import ABC, abstractmethod
+
+# Interfaz (clase abstracta)
+class InterfazInscripcion(ABC):
+    @abstractmethod
+    def registrar(self):
+        pass
+
+    @abstractmethod
+    def validar(self):
+        pass
+
+class Inscripcion(InterfazInscripcion):
     def __init__(self, id_inscripcion,fecha_inscripcion,periodo,carrera_seleccionada,estado):
         self.id_inscripcion = id_inscripcion
         self.fecha = fecha_inscripcion
