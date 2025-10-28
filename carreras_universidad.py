@@ -1,23 +1,29 @@
-import OfertaAcademica
+from ofertaAcademica import OfertaAcademica
 
 class Carrera:
-    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, cuposDisponibles):
+    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles):
         self.__idCarrera = idCarrera
         self.nombreCarrera = nombreCarrera
         self.facultad = facultad
         self.modalidad = modalidad
+        self.duracion = duracion
         self.cuposDisponibles = cuposDisponibles
 
     def asignarCupos(self, numero):
-        print(f"Asignando {numero} cupos a {self.nombreCarrera}")
+        self.cuposDisponibles += numero
+        print(f"{numero} cupos asignados a {self.nombreCarrera}. Total: {self.cuposDisponibles}")
 
     def obtenerinfo(self):
-        print(f"Carrera: {self.nombreCarrera}, Facultad: {self.facultad}, Modalidad: {self.modalidad}")
+        print(f"Carrera: {self.nombreCarrera}")
+        print(f"Facultad: {self.facultad}")
+        print(f"Modalidad: {self.modalidad}")
+        print(f"Duración: {self.duracion}")
+        print(f"Cupos disponibles: {self.cuposDisponibles}")
 
-#herenci simple
-class CarreraVirtual(Carrera):   
-    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, cuposDisponibles, plataforma):
-        super().__init__(idCarrera, nombreCarrera, facultad, modalidad, cuposDisponibles)
+
+class CarreraVirtual(Carrera):
+    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles, plataforma):
+        super().__init__(idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles)
         self.plataforma = plataforma
 
     def obtenerinfo(self):
@@ -26,7 +32,8 @@ class CarreraVirtual(Carrera):
 
 
 
-class Aspirante(Carrera, OfertaAcademica):
+
+'''class Aspirante(Carrera, OfertaAcademica):
     def __init__(self, idAspirante, nombre, carrera_interes):
         self.idAspirante = idAspirante
         self.nombre = nombre
@@ -44,19 +51,4 @@ class AspiranteBecado(Aspirante):   # Hereda de Aspirante (que puede heredar de 
 
     def mostrarInteres(self):
         super().mostrarInteres()
-        print(f"Tiene una beca de tipo: {self.tipoBeca}")
-
-
-c1 = Carrera(1, "Ingeniería en Sistemas", "Facultad de Ingeniería", "Presencial", 50)
-c2 = CarreraVirtual(2, "Diseño Web", "Facultad de Artes", "Virtual", 30, "Moodle")
-
-oferta = OfertaAcademica(1, "2025A", "Universidad Central", [c1], "2025-01-10", "Activa")
-oferta.agregarCarrera(c2)
-oferta.listarCarrera()
-
-
-asp1 = Aspirante(1, "Mateo", c1)
-asp1.mostrarInteres()
-
-asp2 = AspiranteBecado(2, "Ana", c2, "Excelencia Académica")
-asp2.mostrarInteres()
+        print(f"Tiene una beca de tipo: {self.tipoBeca}")'''
