@@ -1,4 +1,4 @@
-from ofertaAcademica import OfertaAcademica
+from oferta_academica import OfertaAcademica
 
 class Carrera:
     def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles):

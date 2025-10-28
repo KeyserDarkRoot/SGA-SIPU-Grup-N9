@@ -1,5 +1,5 @@
 from periodo import Periodo
-from ofertaAcademica import OfertaAcademica
+from oferta_academica import OfertaAcademica
 from carreras_universidad import Carrera
 
 # Crear y activar un periodo
