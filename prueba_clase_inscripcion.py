@@ -3,7 +3,6 @@ from periodo import Periodo
 from ConexionBD.api_supabase import crear_cliente
 
 cliente = crear_cliente()
-periodo = Periodo("2025A", "Periodo 2025-A", "2025-10-01", "2025-12-31", "activo")
 
 inscripcion = Inscripcion(
     periodo_id="2025A",
