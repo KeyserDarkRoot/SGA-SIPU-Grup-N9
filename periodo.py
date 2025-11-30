@@ -70,3 +70,41 @@ class Periodo:
         else:
             print("La fecha no corresponde al periodo actual.")
             return False
+
+    @staticmethod
+    def validar_fecha_en_periodo(fecha_a_validar=None):
+        """
+        Valida si una fecha (o la fecha actual) está dentro del periodo ACTIVO.
+        No depende de ningún objeto Inscripcion.
+        """
+        from datetime import datetime
+        client = crear_cliente()
+
+        try:
+            # Buscar periodo activo
+            response = client.table("periodo").select("*").eq("estado", "activo").execute()
+            if not response.data:
+                print("No hay ningún periodo activo.")
+                return False
+
+            periodo_activo = response.data[0]
+
+            inicio = datetime.fromisoformat(periodo_activo["fechainicio"])
+            fin = datetime.fromisoformat(periodo_activo["fechafin"])
+
+            # Si no te pasan fecha, usas la actual
+            if fecha_a_validar is None:
+                fecha_a_validar = datetime.now().isoformat()
+
+            fecha = datetime.fromisoformat(fecha_a_validar)
+
+            if inicio <= fecha <= fin:
+                print("La fecha está dentro del periodo activo.")
+                return True
+            else:
+                print("La fecha NO corresponde al periodo activo.")
+                return False
+
+        except Exception as e:
+            print("Error al validar el periodo:", e)
+            return False
