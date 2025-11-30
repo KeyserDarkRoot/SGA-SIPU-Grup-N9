@@ -73,8 +73,8 @@ class RegistroNacional:
             os.makedirs(carpeta, exist_ok=True)
 
             #Crea el nombre del archivo con fecha de la creacion, osea la actual
-            fecha_actual = datetime.now().strftime("%Y-%m-%d")
-            nombre_archivo = f"registros_{fecha_actual}.xlsx"
+            fecha_hora_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            nombre_archivo = f"registros_{fecha_hora_actual}.xlsx"
 
 
             # Ruta completa del archivo
