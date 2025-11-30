@@ -1,15 +1,18 @@
 class Laboratorio:
-        def __init__(self, idLaboratorio, nombre, capacidad, estado):
-            self.idLaboratorio = idLaboratorio
-            self.nombre = nombre
-            self.capacidad = capacidad
-            self.estado = estado
+    def __init__(self, id_laboratorio, nombre, capacidad):
+        self.id_laboratorio = id_laboratorio
+        self.nombre = nombre
+        self.capacidad = capacidad
+        self.estado = "disponible"
+
+class ServicioReserva:
+    def reservar(self, laboratorio):
+        # Lógica de validación
+        if laboratorio.estado == "disponible":
+            laboratorio.estado = "ocupado"
+            return True, f"Laboratorio {laboratorio.nombre} reservado con éxito."
+        else:
+            return False, f"El laboratorio {laboratorio.nombre} no está disponible."
         
-        def reservar(self):
-            if self.estado == "disponible" :
-                self.estado = "ocupado"
-                print(f"Laboratorio {self.nombre} (ID: {self.idLaboratorio}) ha sido reservado)")
-                return True
-            else: 
-                print(f"Laboratorio {self.nombre} esta disponible")
-            return False
+        
+        
