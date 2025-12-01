@@ -1,16 +1,72 @@
 from datetime import datetime
+from abc import ABC, abstractmethod
 from ConexionBD.api_supabase import crear_cliente
+
+
+
+# Interface / ABCSS
+
+class TienePeriodo(ABC):
+    """
+    Interface sencilla para entidades que trabajan con un periodo.
+
+    """
+
+    @property
+    @abstractmethod
+    def periodo_id(self):
+        """Identificador del periodo que usa la entidad."""
+        pass
+
+    @abstractmethod
+    def validar_periodo(self):
+        """Valida que la entidad se esté usando en un periodo correcto."""
+        pass
 
 class Periodo:
     def __init__(self, id_periodo, nombre_periodo, fecha_inicio, fecha_fin, estado="inactivo"):
-        self.id_periodo = id_periodo
-        self.nombre_periodo = nombre_periodo
+        # Usamos _ para mostrar encapsulamiento con @property
+        self._id_periodo = id_periodo
+        self._nombre_periodo = nombre_periodo
         self.fecha_inicio = fecha_inicio
         self.fecha_fin = fecha_fin
-        self.estado = estado
+        self._estado = estado
         self.client = crear_cliente()
 
-    # Crear un nuevo periodo académico
+    #Properties (encapsulamiento)
+
+    @property
+    def id_periodo(self):
+        return self._id_periodo
+
+    @id_periodo.setter
+    def id_periodo(self, valor):
+        if not valor:
+            raise ValueError("El id_periodo no puede estar vacío")
+        self._id_periodo = valor
+
+    @property
+    def nombre_periodo(self):
+        return self._nombre_periodo
+
+    @nombre_periodo.setter
+    def nombre_periodo(self, valor):
+        if not valor:
+            raise ValueError("El nombre del periodo no puede estar vacío")
+        self._nombre_periodo = valor
+
+    @property
+    def estado(self):
+        return self._estado
+
+    @estado.setter
+    def estado(self, valor):
+        if valor not in ("activo", "inactivo", "cerrado"):
+            raise ValueError("Estado de periodo no válido")
+        self._estado = valor
+
+    # Metodos de instancia
+
     def crear_periodo(self):
         try:
             data = {
@@ -21,19 +77,18 @@ class Periodo:
                 "estado": self.estado
             }
             self.client.table("periodo").insert(data).execute()
-            print(f"Periodo '{self.nombre_periodo}' creado correctamente.")
+            print("Periodo creado correctamente.")
         except Exception as e:
             print("Error al crear el periodo:", e)
 
-    # Activar un periodo (solo uno puede estar activo a la vez)
     def activar_periodo(self):
         try:
-            # Cerrar otros periodos activos
+            # cerrar otros periodos activos
             self.client.table("periodo").update({"estado": "cerrado"}).eq("estado", "activo").execute()
-            # Activar este
+            # activar este
             self.client.table("periodo").update({"estado": "activo"}).eq("idperiodo", self.id_periodo).execute()
             self.estado = "activo"
-            print(f"Periodo {self.nombre_periodo} activado correctamente.")
+            print("Periodo activado correctamente.")
         except Exception as e:
             print("Error al activar el periodo:", e)
 
@@ -41,16 +96,41 @@ class Periodo:
         try:
             self.client.table("periodo").update({"estado": "cerrado"}).eq("idperiodo", self.id_periodo).execute()
             self.estado = "cerrado"
-            print(f"Periodo {self.nombre_periodo} cerrado.")
+            print("Periodo cerrado.")
         except Exception as e:
             print("Error al cerrar el periodo:", e)
 
-    # Verificar si hay un periodo activo
-    def obtener_periodo_activo(self):
+    def validar_fecha_actual(self, fecha_actual_str):
+        """
+        Método de INSTANCIA: usa los datos del objeto (self).
+        """
+        inicio = datetime.fromisoformat(self.fecha_inicio)
+        fin = datetime.fromisoformat(self.fecha_fin)
+        fecha_actual = datetime.fromisoformat(fecha_actual_str)
+
+        if inicio <= fecha_actual <= fin:
+            print("La fecha está dentro del periodo.")
+            return True
+        else:
+            print("La fecha no corresponde al periodo.")
+            return False
+
+    # Metodo de clase
+
+    @classmethod
+    def obtener_periodo_activo(cls):
+        """
+        Ejemplo de MÉTODO DE CLASE:
+        - No usamos self, usamos cls.
+        - No necesitamos hacer Periodo() antes de llamarlo.
+
+        Devuelve un diccionario con los datos del periodo activo o None.
+        """
+        client = crear_cliente()
         try:
-            response = self.client.table("periodo").select("*").eq("estado", "activo").execute()
+            response = client.table("periodo").select("*").eq("estado", "activo").execute()
             if response.data:
-                print(f"Periodo activo: {response.data[0]['nombreperiodo']}")
+                print("Periodo activo:", response.data[0]["nombreperiodo"])
                 return response.data[0]
             else:
                 print("No hay ningún periodo activo.")
@@ -59,40 +139,28 @@ class Periodo:
             print("Error al verificar el periodo activo:", e)
             return None
 
-    # Validar si una fecha está dentro del rango del periodo
-    def validar_fecha_actual(self, fecha_actual_str):
-        inicio = datetime.fromisoformat(self.fecha_inicio)
-        fin = datetime.fromisoformat(self.fecha_fin)
-        fecha_actual = datetime.fromisoformat(fecha_actual_str)
-        if inicio <= fecha_actual <= fin:
-            print("La fecha está dentro del periodo.")
-            return True
-        else:
-            print("La fecha no corresponde al periodo actual.")
-            return False
+    # Metodo estatico
 
     @staticmethod
     def validar_fecha_en_periodo(fecha_a_validar=None):
         """
-        Valida si una fecha (o la fecha actual) está dentro del periodo ACTIVO.
-        No depende de ningún objeto Inscripcion.
-        """
-        from datetime import datetime
-        client = crear_cliente()
+        Ejemplo de MÉTODO ESTÁTICO:
+        - No recibe self ni cls.
+        - Solo usa la BD y la fecha como parámetro.
 
+        Si no se pasa fecha, se usa la fecha actual.
+        """
+        client = crear_cliente()
         try:
-            # Buscar periodo activo
             response = client.table("periodo").select("*").eq("estado", "activo").execute()
             if not response.data:
                 print("No hay ningún periodo activo.")
                 return False
 
-            periodo_activo = response.data[0]
+            datos = response.data[0]
+            inicio = datetime.fromisoformat(datos["fechainicio"])
+            fin = datetime.fromisoformat(datos["fechafin"])
 
-            inicio = datetime.fromisoformat(periodo_activo["fechainicio"])
-            fin = datetime.fromisoformat(periodo_activo["fechafin"])
-
-            # Si no te pasan fecha, usas la actual
             if fecha_a_validar is None:
                 fecha_a_validar = datetime.now().isoformat()
 
@@ -104,7 +172,21 @@ class Periodo:
             else:
                 print("La fecha NO corresponde al periodo activo.")
                 return False
-
         except Exception as e:
             print("Error al validar el periodo:", e)
             return False
+
+
+# Función de polimorfismo con la interface
+
+def validar_entidad_con_periodo(entidad):
+    """
+    Ejemplo de POLIMORFISMO con la interface TienePeriodo.
+
+    Podemos llamar a entidad.validar_periodo() y entidad.periodo_id
+    sin importar si es una Inscripcion, una OfertaAcademica, etc.
+    """
+    if entidad.validar_periodo():
+        print("Entidad válida para el periodo:", entidad.periodo_id)
+    else:
+        print("Entidad fuera de periodo.")
