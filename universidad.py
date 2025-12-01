@@ -1,11 +1,21 @@
+from abc import ABC, abstractmethod
+
+# Interfaz para permitir extender la funcionalidad SIN modificar Universidad
+class IMostrarInformacion(ABC):
+    @abstractmethod
+    def mostrar(self):
+        pass
+
+# Clase Universidad con soporte para OCP
 class Universidad:
-    def __init__(self, id_universidad, nombre, direccion,):
+    def __init__(self, id_universidad, nombre, direccion):
         self.__id_universidad = id_universidad
         self.__nombre = nombre
         self.__direccion = direccion
         self.__sedes = []
+        self.__informadores = []   # Necesario para aplicar OCP
 
-    # Uso de Get
+    # Getters
     def get_id_universidad(self):
         return self.__id_universidad
 
@@ -18,7 +28,7 @@ class Universidad:
     def get_sedes(self):
         return self.__sedes
 
-    # Uso de set
+    # Setters
     def set_nombre(self, nombre):
         if nombre != "":
             self.__nombre = nombre
@@ -46,16 +56,43 @@ class Universidad:
         else:
             print("No se encontró la sede especificada.")
 
-    def cargar_oferta(self):
-        print("Cargando oferta académica de", self.__nombre)
+    # Metodo que permite el OCP
+    #Permite extender la información que muestra la universidad sin modificar esta clase#
+    def agregar_informador(self, informador: IMostrarInformacion): 
+        self.__informadores.append(informador)
 
     def mostrar_informacion(self):
         print("ID:", self.__id_universidad)
         print("Nombre:", self.__nombre)
         print("Dirección:", self.__direccion)
-        if len(self.__sedes) > 0:
-            print("Sedes:")
-            for s in self.__sedes:
-                print("-", s)
-        else:
-            print("No hay sedes registradas.")
+
+        print("\n Información para aspirantes")
+        for inf in self.__informadores:
+            inf.mostrar()
+
+
+# Clases externas que amplían la funcionalidad (OCP)
+
+class MostrarProcesoInscripcion(IMostrarInformacion):
+    def mostrar(self):
+        print("Proceso de inscripción:")
+        print("- Crear cuenta de aspirante")
+        print("- Subir documentos")
+        print("- Agendar examen de ingreso")
+        print("- Revisión de requisitos")
+
+
+class MostrarRequisitosGenerales(IMostrarInformacion):
+    def mostrar(self):
+        print("Requisitos generales:")
+        print("- Cédula de identidad")
+        print("- Certificado de bachiller")
+        print("- Foto tamaño carnet")
+
+
+class MostrarCalendarioAdmision(IMostrarInformacion):
+    def mostrar(self):
+        print("Calendario de admisión:")
+        print("- Inscripciones: 5 al 20 de abril")
+        print("- Examen: 30 de abril")
+        print("- Resultados: 10 de mayo")
