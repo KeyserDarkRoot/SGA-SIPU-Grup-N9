@@ -1,12 +1,22 @@
 from datetime import datetime
 import uuid
-from periodo import Periodo
+
+from periodo import Periodo, TienePeriodo
 from ConexionBD.api_supabase import crear_cliente
 
-class Inscripcion:
-    def __init__(self, periodo_id, ies_id, tipo_documento, identificacion, nombres, apellidos, carrera_seleccionada, fecha_inscripcion=None, estado="registrado"):
+
+class Inscripcion(TienePeriodo):
+    """
+    Clase que representa una inscripción de un aspirante.
+    
+    """
+
+    def __init__(self, periodo_id, ies_id, tipo_documento,
+                 identificacion, nombres, apellidos,
+                 carrera_seleccionada, fecha_inscripcion=None,
+                 estado="registrado"):
         self.id_inscripcion = str(uuid.uuid4())  # ID único
-        self.periodo_id = periodo_id
+        self._periodo_id = periodo_id           # atributo "protegido"
         self.ies_id = ies_id
         self.tipo_documento = tipo_documento
         self.identificacion = identificacion
@@ -14,45 +24,70 @@ class Inscripcion:
         self.apellidos = apellidos
         self.carrera_seleccionada = carrera_seleccionada
         self.fecha_inscripcion = fecha_inscripcion or datetime.now().isoformat()
-        self.estado = estado
+        self._estado = estado                  # también lo encapsulamos
         self.client = crear_cliente()
 
-        
+    # PROPERTIES
+    @property
+    def periodo_id(self):
+        return self._periodo_id
+
+    @periodo_id.setter
+    def periodo_id(self, valor):
+        if not valor:
+            raise ValueError("El periodo_id no puede estar vacío")
+        self._periodo_id = valor
+
+    @property
+    def estado(self):
+        return self._estado
+
+    @estado.setter
+    def estado(self, valor):
+        if valor not in ("registrado", "anulado"):
+            raise ValueError("Estado de inscripción no válido")
+        self._estado = valor
+
+    # Implementación de la interface TienePeriodo
+
     def validar_periodo(self):
+        """
+        Usa:
+        - Periodo.obtener_periodo_activo()  -> método de CLASE
+        - Periodo.validar_fecha_actual()    -> método de INSTANCIA
+        """
         try:
-            # 1) Crear un objeto Periodo "temporal" solo para usar su cliente
-            periodo_tmp = Periodo(None, None, None, None)
+            datos_periodo = Periodo.obtener_periodo_activo()
+            if not datos_periodo:
+                print("No se puede continuar: no hay periodo activo.")
+                return False
 
-            # 2) Obtener el periodo activo desde la base de datos
-            periodo_activo_data = periodo_tmp.obtener_periodo_activo()
-
-
-            # 3) Crear un objeto Periodo real con los datos del periodo activo
-            periodo_activo = Periodo(
-                id_periodo=periodo_activo_data["idperiodo"],
-                nombre_periodo=periodo_activo_data["nombreperiodo"],
-                fecha_inicio=periodo_activo_data["fechainicio"],
-                fecha_fin=periodo_activo_data["fechafin"],
-                estado=periodo_activo_data["estado"]
+            periodo = Periodo(
+                datos_periodo["idperiodo"],
+                datos_periodo["nombreperiodo"],
+                datos_periodo["fechainicio"],
+                datos_periodo["fechafin"],
+                datos_periodo.get("estado", "activo")
             )
 
-            # 4) Tomar la fecha que vas a validar:
-            #    - Usamos la fecha de inscripción (ya viene en isoformat)
-            #    - Si por alguna razón no está, usamos la fecha actual
             fecha_a_validar = self.fecha_inscripcion or datetime.now().isoformat()
 
-            # 5) Validar que esa fecha esté dentro del periodo activo
-            if periodo_activo.validar_fecha_actual(fecha_a_validar):
+            if periodo.validar_fecha_actual(fecha_a_validar):
+                # Guardamos el id del periodo activo real
+                self.periodo_id = periodo.id_periodo
                 return True
             else:
                 return False
-
         except Exception as e:
             print("Error al validar el periodo:", e)
             return False
 
+    # Otros métodos de instancia
 
     def validar_registro_nacional(self):
+        """
+        Valida si la identificación existe en la tabla 'registronacional'.
+        """
         try:
             resultado = self.client.table("registronacional") \
                 .select("*") \
@@ -68,34 +103,47 @@ class Inscripcion:
         except Exception as e:
             print("Error al validar registro nacional:", e)
             return None
-        
-
 
     def guardar_en_supabase(self):
-        datos = {
-            "periodo_id": self.periodo_id,
-            "ies_id": self.ies_id,
-            "tipo_documento": self.tipo_documento,
-            "identificacion": self.identificacion,
-            "nombres": self.nombres,
-            "apellidos": self.apellidos,
-            "fecha_inscripcion": self.fecha_inscripcion,
-            "carrera_seleccionada": self.carrera_seleccionada,
-            "estado": self.estado
-        }
-
+        """
+        Abstracción: este método se encarga de todo el proceso:
+        - Valida el periodo.
+        - Inserta en la tabla inscripciones.
+        - Llama a otros métodos (registro y certificado).
+        """
         try:
-            self.client.table("inscripciones").insert(datos).execute()
+            if not self.validar_periodo():
+                print("No se puede guardar la inscripción: fuera de periodo activo.")
+                return
+
+            data = {
+                "id_inscripcion": self.id_inscripcion,
+                "periodo_id": self.periodo_id,
+                "ies_id": self.ies_id,
+                "tipo_documento": self.tipo_documento,
+                "identificacion": self.identificacion,
+                "nombres": self.nombres,
+                "apellidos": self.apellidos,
+                "fecha_inscripcion": self.fecha_inscripcion,
+                "carrera_seleccionada": self.carrera_seleccionada,
+                "estado": self.estado,
+            }
+
+            self.client.table("inscripciones").insert(data).execute()
+
             self.registrarInscripcion()
             self.generar_certificado()
         except Exception as e:
-            print(f"Error al guardar inscripción: {e}")
+            print("Error al guardar inscripción:", e)
 
     def registrarInscripcion(self):
-        print("Registro exitoso.")
+        print("Registro de inscripción exitoso.")
 
     def generar_certificado(self):
-        print(f"Certificado generado para {self.nombres} {self.apellidos} - Identificación: {self.identificacion}")
+        print(
+            f"Certificado generado para {self.nombres} {self.apellidos} "
+            f"- Identificación: {self.identificacion}"
+        )
 
     def consultarHistorial(self):
         print("Consulta de historial exitosa.")
@@ -107,79 +155,89 @@ class Inscripcion:
         return f"Inscripción {self.id_inscripcion} - {self.carrera_seleccionada} ({self.estado})"
 
 
+# Funciones auxiliares para usar la clase
 
-#FUNCIÓN PARA CONSULTAR PERIODOS DESDE SUPABASE
-
-def obtener_periodos_disponibles(cliente):
+def obtener_periodos_disponibles():
+    """Muestra y devuelve los periodos registrados en la base."""
+    client = crear_cliente()
     try:
-        resultado = cliente.table("periodo").select("nombreperiodo, fechainicio, fechafin, estado").eq("estado", 'activo').execute()
-        periodos = resultado.data
+        resultado = client.table("periodo").select(
+            "idperiodo, nombreperiodo, fechainicio, fechafin, estado"
+        ).execute()
+        periodos = resultado.data or []
         print("\n=== Periodos disponibles ===")
         for i, p in enumerate(periodos, 1):
-            print(f"{i}. {p['nombreperiodo']} | {p.get('estado', 'sin estado')} | {p.get('fechainicio', '')} - {p.get('fechafin', '')}")
+            print(
+                f"{i}. {p['nombreperiodo']} | {p.get('estado', 'sin estado')} | "
+                f"{p.get('fechainicio', '')} - {p.get('fechafin', '')}"
+            )
         return periodos
     except Exception as e:
         print("Error al obtener periodos:", e)
-        return None
+        return []
 
-
-# BLOQUE PRINCIPAL / MINI MENÚ
 
 def menu_interactivo():
-    cliente = crear_cliente()
-    # Consultar periodos
-    periodos = obtener_periodos_disponibles(cliente)
+    # 1) Mostrar periodos
+    periodos = obtener_periodos_disponibles()
     if not periodos:
         print("No hay periodos disponibles. No se puede continuar.")
         return
 
-    # Mostrar lista y elegir uno
+    # 2) Elegir periodo
     while True:
         try:
             opcion = int(input("Seleccione el número del periodo a usar: "))
             if 1 <= opcion <= len(periodos):
-                periodo_id = periodos[opcion - 1]["nombreperiodo"]
+                periodo_elegido = periodos[opcion - 1]
+                periodo_id = periodo_elegido["idperiodo"]
                 break
             else:
                 print("Opción inválida. Intente nuevamente.")
         except ValueError:
             print("Debe ingresar un número válido.")
-            
+
+    # 3) Validar fecha actual con el MÉTODO ESTÁTICO de Periodo
     if not Periodo.validar_fecha_en_periodo():
         return
-  
-    
-    print("=== Mini menú de inscripción ===")
+
+    print("=== Proceso de inscripción ===")
     cedula = input("Ingrese la cédula (identificación) a validar: ").strip()
 
-    # Crear un objeto temporal Inscripcion solo para validar registro nacional
+    # 4) Usamos un objeto temporal solo para validar Registro Nacional
     temp_inscripcion = Inscripcion(
-        periodo_id="", ies_id="", tipo_documento="", identificacion=cedula,
-        nombres="", apellidos="", carrera_seleccionada=""
+        periodo_id=periodo_id,
+        ies_id="",
+        tipo_documento="",
+        identificacion=cedula,
+        nombres="",
+        apellidos="",
+        carrera_seleccionada=""
     )
 
     registro = temp_inscripcion.validar_registro_nacional()
-    if registro:
-        # Extraer datos del registro nacional
-        nombres = registro.get("nombres") or registro.get("nombre")
-        apellidos = registro.get("apellidos") or registro.get("apellido")
-        tipo_documento = registro.get("tipo_documento") or "cédula"
-        ies_id = input("Ingrese ies_id (ej. 101): ").strip()
-        carrera = input("Ingrese la carrera seleccionada: ").strip()
+    if not registro:
+        return
 
-        # Crear inscripción completa
-        inscripcion = Inscripcion(
-            periodo_id=periodo_id,
-            ies_id=ies_id,
-            tipo_documento=tipo_documento,
-            identificacion=cedula,
-            nombres=nombres,
-            apellidos=apellidos,
-            carrera_seleccionada=carrera
-        )
+    # 5) Crear inscripción real con datos del registro nacional
+    nombres = registro.get("nombres") or registro.get("nombre")
+    apellidos = registro.get("apellidos") or registro.get("apellido")
+    tipo_documento = registro.get("tipo_documento") or "cédula"
+    ies_id = input("Ingrese ies_id (ej. 101): ").strip()
+    carrera = input("Ingrese la carrera seleccionada: ").strip()
 
-        # Guardar
-        inscripcion.guardar_en_supabase()
+    inscripcion = Inscripcion(
+        periodo_id=periodo_id,
+        ies_id=ies_id,
+        tipo_documento=tipo_documento,
+        identificacion=cedula,
+        nombres=nombres,
+        apellidos=apellidos,
+        carrera_seleccionada=carrera
+    )
+
+    # 6) Guardar
+    inscripcion.guardar_en_supabase()
 
 
 if __name__ == "__main__":
