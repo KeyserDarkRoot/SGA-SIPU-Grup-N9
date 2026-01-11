@@ -15,6 +15,12 @@ class IPeriodoDB(ABC):
     def buscar_activo(self):
         pass
 
+class TienePeriodo(ABC):
+    
+    @abstractmethod
+    def validar_periodo(self):
+        pass
+
 class SupabasePeriodoDB(IPeriodoDB):
     def _init_(self):
         self.client = crear_cliente()
