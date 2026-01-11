@@ -84,6 +84,7 @@ class Periodo:
             print("Error al cerrar el periodo:", e)
 
     # Verificar si hay un periodo activo
+    @staticmethod
     def obtener_periodo_activo(self):
         try:
             response = self.db.buscar_activo()
