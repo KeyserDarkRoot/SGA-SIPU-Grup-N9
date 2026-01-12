@@ -13,7 +13,7 @@ class Inscripcion(TienePeriodo):
 
     def __init__(self, periodo_id, ies_id, tipo_documento,
                  identificacion, nombres, apellidos,
-                 carrera_seleccionada, fecha_inscripcion=None,
+                 carrera_seleccionada, nombre_sede, fecha_inscripcion=None,
                  estado="registrado"):
         self.id_inscripcion = str(uuid.uuid4())  # ID único
         self._periodo_id = periodo_id           # atributo "protegido"
@@ -23,9 +23,11 @@ class Inscripcion(TienePeriodo):
         self.nombres = nombres
         self.apellidos = apellidos
         self.carrera_seleccionada = carrera_seleccionada
+        self.nombre_sede = nombre_sede
         self.fecha_inscripcion = fecha_inscripcion or datetime.now().isoformat()
         self._estado = estado                  # también lo encapsulamos
         self.client = crear_cliente()
+        
 
     # PROPERTIES
     @property
@@ -122,6 +124,7 @@ class Inscripcion(TienePeriodo):
                 "fecha_inscripcion": self.fecha_inscripcion,
                 "carrera_seleccionada": self.carrera_seleccionada,
                 "estado": self.estado,
+                "nombre_sede": self.nombre_sede
             }
 
             self.client.table("inscripciones").insert(data).execute()
@@ -171,6 +174,13 @@ def obtener_periodos_disponibles():
         print("Error al obtener periodos:", e)
         return []
 
+def obtener_sedes():
+    client = crear_cliente()
+    res = client.table("sede") \
+        .select("sede_id, nombre_sede, direccion") \
+        .execute()
+
+    return res.data or []
 
 def menu_interactivo():
     # 1) Mostrar periodos
@@ -233,6 +243,9 @@ def menu_interactivo():
 
     # 6) Guardar
     inscripcion.guardar_en_supabase()
+
+
+
 
 
 if __name__ == "__main__":
