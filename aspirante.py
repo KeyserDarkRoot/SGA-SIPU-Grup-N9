@@ -1,69 +1,65 @@
-from ConexionBD.api_supabase import crear_cliente
 import uuid
+from ConexionBD.api_supabase import crear_cliente
+
 class Aspirante:
-    def __init__(self, id_aspirante, identificacion, nombres, apellidos, correo, celular, fechanacimiento, calificacion):
-        self.id_aspirante = id_aspirante
+    def __init__(self, identificacion, nombres, apellidos, correo, 
+                 nota_bachillerato, 
+                 es_pueblo_nacionalidad=False, 
+                 tiene_discapacidad=False, 
+                 es_vulnerable_econom=False,
+                 es_residente_local=False): # <--- NUEVO CAMPO POR REGLAMENTO ULEAM
+        
+        self.id_aspirante = str(uuid.uuid4())
         self.identificacion = identificacion
         self.nombres = nombres
         self.apellidos = apellidos
         self.correo = correo
-        self.celular = celular
-        self.fecha_nacimiento = fechanacimiento
-        self.calificacion = float(calificacion)
-        self.puntaje_examen = None
-        self.puntaje_postulacion = None
-
-    def registrar(self):
-        print(f"Aspirante {self.nombres} {self.apellidos} registrado con cédula {self.identificacion}")
-
-    def actualizar_contacto(self, nuevo_correo, nuevo_celular):
-        self.correo = nuevo_correo
-        self.celular = nuevo_celular
-        print(f"Contacto actualizado: {self.correo}, {self.celular}")
-
-    def calcular_puntaje(self, puntaje_examen, porcentaje_bachillerato, porcentaje_examen):
-        self.puntaje_examen = float(puntaje_examen)
-        self.puntaje_postulacion = (self.calificacion * porcentaje_bachillerato) + \
-                                   (self.puntaje_examen * porcentaje_examen)
-        print(f"Puntaje total de {self.nombres}: {self.puntaje_postulacion}")
-        return self.puntaje_postulacion
-
-    def generar_comprobante(self):
-        print(f"Comprobante generado para {self.nombres} ({self.identificacion})")
         
-    @staticmethod
-    def cargar_aspirantes_desde_supabase():
-        cliente = crear_cliente()
-        try:
-            respuesta = cliente.table("registronacional").select("*").execute()
-            registros = respuesta.data
+        # Datos Académicos
+        self.nota_bachillerato = float(nota_bachillerato)
+        
+        # Datos de Acción Afirmativa (Política de Cuotas)
+        self.es_pueblo_nacionalidad = es_pueblo_nacionalidad
+        self.tiene_discapacidad = tiene_discapacidad
+        self.es_vulnerable_econom = es_vulnerable_econom
+        self.es_residente_local = es_residente_local # Territorialidad
+        
+        self.puntaje_final_postulacion = 0.0
 
-            aspirantes = []
-            for registro in registros:
-                aspirante = Aspirante(
-                    id_aspirante=str(uuid.uuid4()),
-                    identificacion=registro["identificacion"],
-                    nombres=registro["nombres"],
-                    apellidos=registro["apellidos"],
-                    correo=registro["correo"],
-                    celular=registro["celular"],
-                    fechanacimiento=registro["fechanacimiento"],
-                    calificacion=registro["calificacion"]
-                )
-                print(f"Aspirante creado: {aspirante.nombres} {aspirante.apellidos} ({aspirante.identificacion})")
-                aspirantes.append(aspirante)
+    def calcular_puntos_adicionales(self):
+        """
+        Suma puntos de acción afirmativa según Acuerdo SENESCYT 2024-0055.
+        Incluye Puntos por Territorialidad (Reglamento Interno).
+        """
+        puntos_extra = 0
+        
+        if self.es_pueblo_nacionalidad: puntos_extra += 15
+        if self.tiene_discapacidad: puntos_extra += 10
+        if self.es_vulnerable_econom: puntos_extra += 15
+        if self.es_residente_local: puntos_extra += 5  # Puntos por ser de la zona (ej. Manabí)
+        
+        # La norma suele poner un techo máximo a los puntos extra (ej. 45 pts)
+        return min(puntos_extra, 45)
 
-            return aspirantes
-
-        except Exception as e:
-            print("Error al cargar aspirantes:", e)
-            return []
-
-#Ejemplo de uso
-if __name__ == "__main__":
-    aspirantes = Aspirante.cargar_aspirantes_desde_supabase()
-
-for a in aspirantes:
-    a.registrar()
-    a.calcular_puntaje(puntaje_examen=800, porcentaje_bachillerato=0.4, porcentaje_examen=0.6)
-    a.generar_comprobante()
+    def calcular_puntaje_final(self, nota_evaluacion):
+        """
+        Fórmula: (Nota Examen * Peso) + (Nota Grado * Peso) + Puntos Extra
+        Según Reglamento ULEAM/Senescyt.
+        """
+        peso_eval = 0.50 # Puede variar según la IES
+        peso_bach = 0.50
+        
+        puntos_accion_afirmativa = self.calcular_puntos_adicionales()
+        
+        self.puntaje_final_postulacion = (nota_evaluacion * peso_eval) + \
+                                         (self.nota_bachillerato * peso_bach) + \
+                                         puntos_accion_afirmativa
+        
+        print(f"\n--- CÁLCULO DE PUNTAJE (Normativa 2025) ---")
+        print(f"Aspirante: {self.nombres} {self.apellidos}")
+        print(f"1. Mérito Académico (50%): {self.nota_bachillerato * peso_bach}")
+        print(f"2. Evaluación (50%): {nota_evaluacion * peso_eval}")
+        print(f"3. Acción Afirmativa (Territorialidad/Vuln): +{puntos_accion_afirmativa}")
+        print(f"TOTAL POSTULACIÓN: {self.puntaje_final_postulacion}")
+        
+        return self.puntaje_final_postulacion
