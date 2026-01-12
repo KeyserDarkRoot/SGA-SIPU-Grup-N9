@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import sqlite3
 from datetime import datetime
 
-# 🔷 Interfaz general de notificación
+#Interfaz general de notificación
 class INotificacion(ABC):
     @abstractmethod
     def enviar(self, mensaje: str, destinatario: str) -> None:
@@ -12,7 +12,7 @@ class INotificacion(ABC):
     def marcar_leido(self, id_notificacion: int) -> None:
         pass
 
-# 🔷 Notificación por consola (útil para pruebas y desarrollo)
+#Notificación por consola (útil para pruebas y desarrollo)
 class NotificacionConsola(INotificacion):
     def enviar(self, mensaje: str, destinatario: str) -> None:
         print(f"[Consola] Notificación a {destinatario}: {mensaje}")
@@ -20,7 +20,7 @@ class NotificacionConsola(INotificacion):
     def marcar_leido(self, id_notificacion: int) -> None:
         print(f"[Consola] Notificación {id_notificacion} marcada como leída.")
 
-# 🔷 Notificación persistente en base de datos
+#Notificación persistente en base de datos
 class NotificacionDB(INotificacion):
     def __init__(self, db_path: str):
         self.db_path = db_path
