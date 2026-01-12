@@ -107,36 +107,52 @@ class SistemaSIPU:
         contra_input = self.entries_reg["Contraseña"].get().strip()
         confir_input = self.entries_reg["Confirmar Contraseña"].get().strip()
 
+        # Validaciones básicas
+        if not cedula_input or not correo_input or not contra_input:
+            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+
         if contra_input != confir_input:
             messagebox.showerror("Error", "Las contraseñas no coinciden.")
             return
 
         try:
-            # 1. Buscar nombre en 'registronacional' usando 'identificacion'
-            res_rn = self.supabase.table("registronacional").select("nombres").eq("identificacion", cedula_input).execute()
+            # 1. BUSCAR EN REGISTRO NACIONAL
+            # Consultamos nombres y apellidos usando la cédula ingresada
+            res_rn = self.supabase.table("registronacional").select("nombres, apellidos").eq("identificacion", cedula_input).execute()
             
-            # Si no lo encuentra, usamos un nombre por defecto
-            nombre_final = res_rn.data[0]['nombres'] if res_rn.data else "Aspirante Nuevo"
+            if not res_rn.data:
+                messagebox.showerror("No Habilitado", "La cédula no consta en el Registro Nacional. No puede crear una cuenta.")
+                return
 
-            # 2. Insertar en 'usuarios' usando 'nombre_completo'
+            # Extraemos los datos de la tabla oficial
+            datos_oficiales = res_rn.data[0]
+            nombres_reales = datos_oficiales['nombres']
+            apellidos_reales = datos_oficiales['apellidos']
+
+            # 2. INSERTAR EN LA TABLA USUARIOS
+            # Aquí asignamos el rol 'Aspirante' por defecto y los datos extraídos
             self.supabase.table("usuarios").insert({
                 "cedula": cedula_input,
+                "rol": "Aspirante",           # Rol automático
+                "nombres": nombres_reales,    # De Registro Nacional
+                "apellidos": apellidos_reales, # De Registro Nacional
                 "correo": correo_input,
-                "contrasena": contra_input,
-                "nombre_completo": nombre_final  # <-- CORREGIDO AQUÍ
+                "contrasena": contra_input
+                # fecha_creacion se pone sola en Supabase si es 'now()'
             }).execute()
 
-            # 3. Notificación al correo
-            asunto = "Cuenta SIPU Creada"
-            cuerpo = f"Hola {nombre_final},\n\nTu cuenta ha sido creada exitosamente.\nIdentificación: {cedula_input}"
+            # 3. NOTIFICACIÓN AL CORREO
+            asunto = "Bienvenido al SIPU - Registro Exitoso"
+            cuerpo = f"Hola {nombres_reales},\n\nTu cuenta ha sido creada exitosamente.\nUsuario: {cedula_input}\nRol: Aspirante"
             self.enviar_correo(correo_input, asunto, cuerpo)
 
-            messagebox.showinfo("Éxito", "¡Cuenta creada correctamente!")
+            messagebox.showinfo("Éxito", f"¡Cuenta creada para {nombres_reales} {apellidos_reales}!")
             self.mostrar_login()
 
         except Exception as e:
             print(f"Error Registro: {e}")
-            messagebox.showerror("Error", f"No se pudo crear la cuenta: {e}")
+            messagebox.showerror("Error", f"No se pudo completar el registro: {e}")
             
     def proceso_recuperar(self):
         self.root.geometry("400x500")
