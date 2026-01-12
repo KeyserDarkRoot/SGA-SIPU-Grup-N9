@@ -51,35 +51,30 @@ class Inscripcion(TienePeriodo):
     # Implementación de la interface TienePeriodo
 
     def validar_periodo(self):
-        """
-        Usa:
-        - Periodo.obtener_periodo_activo()  -> método de CLASE
-        - Periodo.validar_fecha_actual()    -> método de INSTANCIA
-        """
         try:
-            datos_periodo = Periodo.obtener_periodo_activo()
-            if not datos_periodo:
-                print("No se puede continuar: no hay periodo activo.")
+            # Usamos Periodo SOLO como servicio
+            periodo_tmp = Periodo(None,None,None,None)
+            datos = periodo_tmp.obtener_periodo_activo()
+
+            if not datos:
+                print("No existe periodo activo.")
                 return False
 
-            periodo = Periodo(
-                datos_periodo["idperiodo"],
-                datos_periodo["nombreperiodo"],
-                datos_periodo["fechainicio"],
-                datos_periodo["fechafin"],
-                datos_periodo.get("estado", "activo")
-            )
+            # Validar fecha
+            inicio = datetime.strptime(datos["fechainicio"],"%Y-%m-%d")
+            fin = datetime.strptime(datos["fechafin"],"%Y-%m-%d")
+            hoy = datetime.now()
 
-            fecha_a_validar = self.fecha_inscripcion or datetime.now().isoformat()
-
-            if periodo.validar_fecha_actual(fecha_a_validar):
-                # Guardamos el id del periodo activo real
-                self.periodo_id = periodo.id_periodo
+            if inicio <= hoy <= fin:
+                self.periodo_id = datos["nombreperiodo"]
+                print("Periodo válido.")
                 return True
-            else:
-                return False
+
+            print("Fuera de fecha del periodo.")
+            return False
+
         except Exception as e:
-            print("Error al validar el periodo:", e)
+            print("Error validando periodo:",e)
             return False
 
     # Otros métodos de instancia
