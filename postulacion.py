@@ -1,42 +1,36 @@
-from abc import ABC, abstractmethod
-
-#Interfaz de certificados
-class ICertificado(ABC):
-    @abstractmethod
-    def generar_certificado_postulacion(self):
-        pass
-
-class RegistroUnico:
-    def obtener_datos_postulante(self, id_postulacion):
-        return {
-            "nombre": "Juan Pérez",
-            "puntaje": 850,
-            "documento": "1728392010"
-        }
-
 class Postulacion:
-    def __init__(self, idPostulacion,opcionesCarrera,prioridad,carreraSeleccionada,registro):
-        
-        self.idPostulacion = idPostulacion
-        self.opcionesCarrera = opcionesCarrera
-        self.prioridad = prioridad
-        self.carreraSeleccionada = carreraSeleccionada
-        self.registro = registro
+    def __init__(self, id_postulacion, aspirante, carrera_seleccionada, prioridad=1):
+        self.id_postulacion = id_postulacion
+        self.aspirante = aspirante
+        self.carrera = carrera_seleccionada
+        self.prioridad = prioridad 
+        self.estado = "PENDIENTE" 
 
-    def registrar_opciones(self):
-        print(f"Registro exitoso: {self.opciones_carrera}")
+    def procesar_asignacion(self, puntaje_corte_referencial):
+        print(f"\nVerificando asignación para {self.carrera.nombreCarrera}...")
 
-    def calcular_puntaje_final(self):
-        puntaje_base = 600
-        puntaje_prioridad = self.prioridad * 50
-        puntaje_total = puntaje_base + puntaje_prioridad
-        print(f"Puntaje final: {puntaje_total}")
-        return puntaje_total
-
-    def generar_certificado_postulacion(self):
-        print(f"Generando certificado para la carrera {self.carrera_seleccionada}")
-        if self.registro:
-            datos = self.registro.obtener_datos_postulante(self.id_postulacion)
-            print(f"Datos del postulante: {datos}")
+        if self.aspirante.puntaje_final_postulacion >= puntaje_corte_referencial:
+            if self.carrera.cuposDisponibles > 0:
+                self.estado = "ASIGNADO"
+                print(f"¡CUPO ASIGNADO! El sistema pre-asigna el cupo.")
+                print("ATENCIÓN: El aspirante debe realizar la Aceptación Expresa.")
+            else:
+                self.estado = "RECHAZADO_SIN_CUPO"
+                print("No hay cupos disponibles.")
         else:
-            print("Registro único no disponible.")
+            self.estado = "RECHAZADO_PUNTAJE"
+            print(f"Puntaje insuficiente (Req: {puntaje_corte_referencial}).")
+
+    def decision_aspirante(self, decision):
+
+        if self.estado != "ASIGNADO":
+            print("No puede aceptar un cupo no asignado.")
+            return
+
+        if decision.upper() == "S":
+            self.estado = "ACEPTADO"
+            self.carrera.asignarCupos(-1) # Descuenta cupo real
+            print("Cupo ACEPTADO. Generandso comprobante de asignación...")
+        else:
+            self.estado = "RECHAZADO"
+            print("Cupo RECHAZADO por el usuario.")
