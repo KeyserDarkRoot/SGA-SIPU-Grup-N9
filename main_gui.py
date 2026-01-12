@@ -2,12 +2,12 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from serviciosExternos import ServicioRegistroNacional
 # Importamos la interfaz que creamos en el otro archivo
-from ui_inscripcion import VentanaFormularioInscripcion 
+from ui_inscripcion import VentanaFormularioInscripcion
 
 class VentanaPrincipal:
     def __init__(self, root):
         self.root = root
-        self.root.title("SIPU - Sistema de Admisión 2025")
+        self.root.title("SIPU - Sistema de Inscripcion y Postulacion para Universidades")
         self.root.geometry("400x300")
         
         # Instancia del servicio
@@ -23,7 +23,7 @@ class VentanaPrincipal:
         self.ent_cedula = tk.Entry(self.frame, font=("Arial", 12), justify='center')
         self.ent_cedula.pack(pady=10)
 
-        self.btn_validar = tk.Button(self.frame, text="Validar Registro", 
+        self.btn_validar = tk.Button(self.frame, text="Validar Registro",
                                      command=self.proceso_validacion,
                                      bg="#3498db", fg="white", width=20)
         self.btn_validar.pack(pady=10)
@@ -48,15 +48,14 @@ class VentanaPrincipal:
                 # Pasamos a la siguiente ventana
                 self.abrir_formulario_inscripcion(aspirante_data)
             else:
-                messagebox.showerror("No Habilitado", 
+                messagebox.showerror("No Habilitado",
                                      f"Lo sentimos, su estado es: {estado}.\nNo puede continuar.")
         else:
             messagebox.showerror("Error", "Cédula no encontrada en el Registro Nacional.")
 
     def abrir_formulario_inscripcion(self, datos):
         # Ocultamos la ventana principal para que no estorbe
-        self.root.withdraw() 
-        
+        self.root.withdraw()
         # Creamos una nueva ventana de nivel superior
         nueva_ventana = tk.Toplevel()
         
