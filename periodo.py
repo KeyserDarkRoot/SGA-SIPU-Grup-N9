@@ -22,7 +22,7 @@ class TienePeriodo(ABC):
         pass
 
 class SupabasePeriodoDB(IPeriodoDB):
-    def _init_(self):
+    def __init__(self):
         self.client = crear_cliente()
 
     def insertar(self, data: dict):
@@ -35,7 +35,7 @@ class SupabasePeriodoDB(IPeriodoDB):
         return self.client.table("periodo").select("*").eq("estado", "activo").execute()
 
 class Periodo:
-    def _init_(self, id_periodo, nombre_periodo, fecha_inicio, fecha_fin, estado="inactivo", db: IPeriodoDB = None):
+    def __init__(self, id_periodo, nombre_periodo, fecha_inicio, fecha_fin, estado="inactivo", db: IPeriodoDB = None):
         self.db = db if db else SupabasePeriodoDB()
 
         self.id_periodo = id_periodo
