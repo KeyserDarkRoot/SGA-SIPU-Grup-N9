@@ -1,7 +1,7 @@
 import uuid
 from ConexionBD.api_supabase import crear_cliente
 # Importamos la lógica matemática que acabamos de crear
-from Logica.calculadora import CalculadoraPuntaje 
+from calculadora import CalculadoraPuntaje 
 
 class Aspirante:
     def __init__(self, identificacion, nombres, apellidos, correo, nota_grado, condiciones_dict):
