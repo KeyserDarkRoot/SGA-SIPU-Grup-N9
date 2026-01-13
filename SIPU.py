@@ -13,9 +13,9 @@ class SistemaSIPU:
         self.root.geometry("400x500")
         self.root.configure(bg="#f0f2f5")
         
-        # Configuración de correo (REEMPLAZA ESTO)
-        self.EMAIL_EMISOR = "tu_correo@gmail.com"
-        self.EMAIL_PASSWORD = "tu_clave_de_16_letras" 
+        # Configuración de correo
+        self.EMAIL_EMISOR = "brithany.macias.t@gmail.com"
+        self.EMAIL_PASSWORD = "hftdqcpkqmkhnlop" 
 
         self.mostrar_login()
         
@@ -27,13 +27,12 @@ class SistemaSIPU:
             msg['From'] = self.EMAIL_EMISOR
             msg['To'] = destinatario
 
-            # Servidor SMTP de Gmail
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as smtp:
                 smtp.login(self.EMAIL_EMISOR, self.EMAIL_PASSWORD)
                 smtp.send_message(msg)
             return True
         except Exception as e:
-            print(f"Error SMTP: {e}")
+            print(f"Detalle del error SMTP: {e}") 
             return False
 
     # --- VISTAS DE ACCESO ---
@@ -157,29 +156,36 @@ class SistemaSIPU:
     def proceso_recuperar(self):
         self.root.geometry("400x500")
         
-        frame = tk.Frame(self.root, bg="white", padx=40, pady=40)
-        frame.place(relx=0.5, rely=0.5, anchor="center")
-        
         cedula = simpledialog.askstring("Recuperar contraseña", "Ingrese su cédula/pasaporte:")
         if not cedula: return
 
         try:
-            # Buscamos usando el nombre de columna correcto
+            # Buscamos en la tabla 'usuarios' con los nombres de columna actualizados
             res = self.supabase.table("usuarios").select("correo", "contrasena", "nombres", "apellidos").eq("cedula", cedula).execute()
             
             if res.data:
                 u = res.data[0]
                 asunto = "Recuperación de Acceso SIPU"
-                mensaje = f"Hola {u['nombres']},{u['apellidos']},\n\nTu contraseña es: {u['contrasena']}"
+                # Usamos 'nombres' que es tu nueva columna
+                mensaje = f"Hola {u['nombres']} {u['apellidos']},\n\nTu contraseña registrada en SIPU es: {u['contrasena']}"
                 
-                if self.enviar_correo(u['correo'], asunto, mensaje):
-                    messagebox.showinfo("Éxito", f"Clave enviada a: {u['correo']}")
+                # Intentar enviar
+                exito = self.enviar_correo(u['correo'], asunto, mensaje)
+                
+                if exito:
+                    messagebox.showinfo("Éxito", f"Clave enviada al correo: {u['correo']}")
                 else:
-                    messagebox.showerror("Error", "Servidor de correo no disponible.")
+                    # Este error sale si la clave de aplicación o el correo emisor están mal
+                    messagebox.showerror("Error SMTP", 
+                        "No se pudo conectar con el servidor de Gmail.\n\n"
+                        "Verifique:\n1. Que EMAIL_PASSWORD sea una 'Contraseña de Aplicación' de 16 letras.\n"
+                        "2. Que tenga conexión a internet.")
             else:
-                messagebox.showerror("Error", "Cédula/pasaporte no registrado.")
+                messagebox.showerror("Error", "La cédula ingresada no está registrada.")
+                
         except Exception as e:
-            print(f"Error Recuperar: {e}")
+            print(f"Error en Recuperar: {e}")
+            messagebox.showerror("Error", "Ocurrió un error al consultar la base de datos.")
             
 
 
