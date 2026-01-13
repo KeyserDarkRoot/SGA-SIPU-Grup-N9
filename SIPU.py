@@ -76,7 +76,7 @@ class SistemaSIPU:
 
         tk.Label(frame, text="Crear Cuenta", font=("Arial", 16, "bold"), bg="white").pack(pady=10)
         
-        campos = ["Cédula", "Correo", "Contraseña", "Confirmar Contraseña"]
+        campos = ["Cédula/Pasaporte", "Correo", "Contraseña", "Confirmar Contraseña"]
         self.entries_reg = {}
         
         for campo in campos:
@@ -99,10 +99,10 @@ class SistemaSIPU:
             self.usuario_actual = res.data[0]
             self.abrir_dashboard()
         else:
-            messagebox.showerror("Error", "Cédula o contraseña incorrectos")
+            messagebox.showerror("Error", "Cédula/pasaporte o contraseña incorrectos")
 
     def proceso_registro(self):
-        cedula_input = self.entries_reg["Cédula"].get().strip()
+        cedula_input = self.entries_reg["Cédula/Pasaporte"].get().strip()
         correo_input = self.entries_reg["Correo"].get().strip()
         contra_input = self.entries_reg["Contraseña"].get().strip()
         confir_input = self.entries_reg["Confirmar Contraseña"].get().strip()
@@ -122,7 +122,7 @@ class SistemaSIPU:
             res_rn = self.supabase.table("registronacional").select("nombres, apellidos").eq("identificacion", cedula_input).execute()
             
             if not res_rn.data:
-                messagebox.showerror("No Habilitado", "La cédula no consta en el Registro Nacional. No puede crear una cuenta.")
+                messagebox.showerror("No Habilitado", "La cédula/pasaporte no consta en el Registro Nacional. No puede crear una cuenta.")
                 return
 
             # Extraemos los datos de la tabla oficial
@@ -160,7 +160,7 @@ class SistemaSIPU:
         frame = tk.Frame(self.root, bg="white", padx=40, pady=40)
         frame.place(relx=0.5, rely=0.5, anchor="center")
         
-        cedula = simpledialog.askstring("Recuperar contraseña", "Ingrese su cédula:")
+        cedula = simpledialog.askstring("Recuperar contraseña", "Ingrese su cédula/pasaporte:")
         if not cedula: return
 
         try:
@@ -177,7 +177,7 @@ class SistemaSIPU:
                 else:
                     messagebox.showerror("Error", "Servidor de correo no disponible.")
             else:
-                messagebox.showerror("Error", "Cédula no registrada.")
+                messagebox.showerror("Error", "Cédula/pasaporte no registrado.")
         except Exception as e:
             print(f"Error Recuperar: {e}")
             
