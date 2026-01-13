@@ -165,12 +165,12 @@ class SistemaSIPU:
 
         try:
             # Buscamos usando el nombre de columna correcto
-            res = self.supabase.table("usuarios").select("correo", "contrasena", "nombre_completo").eq("cedula", cedula).execute()
+            res = self.supabase.table("usuarios").select("correo", "contrasena", "nombres", "apellidos").eq("cedula", cedula).execute()
             
             if res.data:
                 u = res.data[0]
                 asunto = "Recuperación de Acceso SIPU"
-                mensaje = f"Hola {u['nombre_completo']},\n\nTu contraseña es: {u['contrasena']}"
+                mensaje = f"Hola {u['nombres']},{u['apellidos']},\n\nTu contraseña es: {u['contrasena']}"
                 
                 if self.enviar_correo(u['correo'], asunto, mensaje):
                     messagebox.showinfo("Éxito", f"Clave enviada a: {u['correo']}")
