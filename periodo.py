@@ -22,7 +22,7 @@ class TienePeriodo(ABC):
         pass
 
 class SupabasePeriodoDB(IPeriodoDB):
-    def _init_(self):
+    def __init__(self):
         self.client = crear_cliente()
 
     def insertar(self, data: dict):
@@ -84,6 +84,7 @@ class Periodo:
             print("Error al cerrar el periodo:", e)
 
     # Verificar si hay un periodo activo
+    @staticmethod
     def obtener_periodo_activo(self):
         try:
             response = self.db.buscar_activo()

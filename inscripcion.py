@@ -13,7 +13,7 @@ class Inscripcion(TienePeriodo):
 
     def __init__(self, periodo_id, ies_id, tipo_documento,
                  identificacion, nombres, apellidos,
-                 carrera_seleccionada, fecha_inscripcion=None,
+                 carrera_seleccionada, nombre_sede, fecha_inscripcion=None,
                  estado="registrado"):
         self.id_inscripcion = str(uuid.uuid4())  # ID único
         self._periodo_id = periodo_id           # atributo "protegido"
@@ -23,9 +23,11 @@ class Inscripcion(TienePeriodo):
         self.nombres = nombres
         self.apellidos = apellidos
         self.carrera_seleccionada = carrera_seleccionada
+        self.nombre_sede = nombre_sede
         self.fecha_inscripcion = fecha_inscripcion or datetime.now().isoformat()
         self._estado = estado                  # también lo encapsulamos
         self.client = crear_cliente()
+        
 
     # PROPERTIES
     @property
@@ -51,35 +53,30 @@ class Inscripcion(TienePeriodo):
     # Implementación de la interface TienePeriodo
 
     def validar_periodo(self):
-        """
-        Usa:
-        - Periodo.obtener_periodo_activo()  -> método de CLASE
-        - Periodo.validar_fecha_actual()    -> método de INSTANCIA
-        """
         try:
-            datos_periodo = Periodo.obtener_periodo_activo()
-            if not datos_periodo:
-                print("No se puede continuar: no hay periodo activo.")
+            # Usamos Periodo SOLO como servicio
+            periodo_tmp = Periodo(None,None,None,None)
+            datos = periodo_tmp.obtener_periodo_activo()
+
+            if not datos:
+                print("No existe periodo activo.")
                 return False
 
-            periodo = Periodo(
-                datos_periodo["idperiodo"],
-                datos_periodo["nombreperiodo"],
-                datos_periodo["fechainicio"],
-                datos_periodo["fechafin"],
-                datos_periodo.get("estado", "activo")
-            )
+            # Validar fecha
+            inicio = datetime.strptime(datos["fechainicio"],"%Y-%m-%d")
+            fin = datetime.strptime(datos["fechafin"],"%Y-%m-%d")
+            hoy = datetime.now()
 
-            fecha_a_validar = self.fecha_inscripcion or datetime.now().isoformat()
-
-            if periodo.validar_fecha_actual(fecha_a_validar):
-                # Guardamos el id del periodo activo real
-                self.periodo_id = periodo.id_periodo
+            if inicio <= hoy <= fin:
+                self.periodo_id = datos["nombreperiodo"]
+                print("Periodo válido.")
                 return True
-            else:
-                return False
+
+            print("Fuera de fecha del periodo.")
+            return False
+
         except Exception as e:
-            print("Error al validar el periodo:", e)
+            print("Error validando periodo:",e)
             return False
 
     # Otros métodos de instancia
@@ -127,6 +124,7 @@ class Inscripcion(TienePeriodo):
                 "fecha_inscripcion": self.fecha_inscripcion,
                 "carrera_seleccionada": self.carrera_seleccionada,
                 "estado": self.estado,
+                "nombre_sede": self.nombre_sede
             }
 
             self.client.table("inscripciones").insert(data).execute()
@@ -176,6 +174,13 @@ def obtener_periodos_disponibles():
         print("Error al obtener periodos:", e)
         return []
 
+def obtener_sedes():
+    client = crear_cliente()
+    res = client.table("sede") \
+        .select("sede_id, nombre_sede, direccion") \
+        .execute()
+
+    return res.data or []
 
 def menu_interactivo():
     # 1) Mostrar periodos
@@ -238,6 +243,9 @@ def menu_interactivo():
 
     # 6) Guardar
     inscripcion.guardar_en_supabase()
+
+
+
 
 
 if __name__ == "__main__":
