@@ -104,5 +104,5 @@ class Sede:
         
         lab_mayor = max(laboratorios, key=lambda x: x.capacidad)
         print(f"Laboratorio con mayor capacidad: {lab_mayor.nombre} ({lab_mayor.capacidad} equipos)")
-        return lab_mayor 
+        return lab_mayor
  
