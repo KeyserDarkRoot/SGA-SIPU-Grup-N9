@@ -238,11 +238,11 @@ class SistemaSIPU:
         btn_logout.pack(side="bottom", fill="x", padx=20, pady=20)
 
         # --- ÁREA PRINCIPAL (Derecha) ---
-        main_area = tk.Frame(self.root, bg=color_main)
-        main_area.pack(side="right", expand=True, fill="both")
+        self.main_area = tk.Frame(self.root, bg=color_main)
+        self.main_area.pack(side="right", expand=True, fill="both")
 
         # Cabecera
-        header = tk.Frame(main_area, bg="white", height=120)
+        header = tk.Frame(self.main_area, bg="white", height=120)
         header.pack(fill="x", padx=30, pady=30)
         
         tk.Label(header, text="Sistema de Inscripción y Postulación a las Universidades", 
@@ -274,10 +274,10 @@ class SistemaSIPU:
             estado_rn = "ERROR DE CONEXIÓN"
 
         # --- SECCIONES (Fases) ---
-        self.crear_acordion_pro(main_area, "FASE 1: REGISTRO NACIONAL", 
+        self.crear_acordion_pro(self.main_area, "FASE 1: REGISTRO NACIONAL", 
                                f"Su estado actual es: {estado_rn} {icono}", color_estado)
         
-        self.crear_acordion_pro(main_area, "FASE 2: INSCRIPCIÓN Y EVALUACIÓN", 
+        self.crear_acordion_pro(self.main_area, "FASE 2: INSCRIPCIÓN Y EVALUACIÓN", 
                                "Complete su inscripción para la sede de examen.", "#3498db", botones=True)
 
     def crear_acordion_pro(self, parent, titulo, contenido, color_status, botones=False):
@@ -306,11 +306,22 @@ class SistemaSIPU:
             style = ttk.Style()
             style.configure("Accent.TButton", font=("Arial", 10, "bold"))
             
-            btn_reg = ttk.Button(btn_frame, text="Realizar Inscripción", width=25)
+            btn_reg = ttk.Button(btn_frame, text="Realizar Inscripción", width=25, 
+                command=self.mostrar_formulario_inscripcion)
             btn_reg.pack(side="left", padx=(0, 10))
-            
+
             btn_cert = ttk.Button(btn_frame, text="Descargar Certificado", width=25)
             btn_cert.pack(side="left")
+            
+    def mostrar_formulario_inscripcion(self):
+        from ui_inscripcion import VistaInscripcion
+        # Limpiamos el contenido del área principal (conservando el sidebar)
+        for widget in self.main_area.winfo_children():
+            widget.destroy()
+        
+        # Cargamos la nueva vista de pasos
+        self.vista_form = VistaInscripcion(self.main_area, self)
+        self.vista_form.pack(fill="both", expand=True)
 
 if __name__ == "__main__":
     root = tk.Tk()
