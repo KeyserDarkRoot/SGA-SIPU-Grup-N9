@@ -1,65 +1,50 @@
 import uuid
 from ConexionBD.api_supabase import crear_cliente
+# Importamos la lógica matemática que acabamos de crear
+from Logica.calculadora import CalculadoraPuntaje 
 
 class Aspirante:
-    def __init__(self, identificacion, nombres, apellidos, correo, 
-                 nota_bachillerato, 
-                 es_pueblo_nacionalidad=False, 
-                 tiene_discapacidad=False, 
-                 es_vulnerable_econom=False,
-                 es_residente_local=False): # <--- NUEVO CAMPO POR REGLAMENTO ULEAM
-        
+    def __init__(self, identificacion, nombres, apellidos, correo, nota_grado, condiciones_dict):
         self.id_aspirante = str(uuid.uuid4())
         self.identificacion = identificacion
         self.nombres = nombres
         self.apellidos = apellidos
         self.correo = correo
+        self.nota_bachillerato = float(nota_grado)
         
-        # Datos Académicos
-        self.nota_bachillerato = float(nota_bachillerato)
-        
-        # Datos de Acción Afirmativa (Política de Cuotas)
-        self.es_pueblo_nacionalidad = es_pueblo_nacionalidad
-        self.tiene_discapacidad = tiene_discapacidad
-        self.es_vulnerable_econom = es_vulnerable_econom
-        self.es_residente_local = es_residente_local # Territorialidad
+        # Diccionario con las 11 banderas del CSV 4
+        # Ej: {'es_rural': True, 'tiene_discapacidad': False, ...}
+        self.condiciones = condiciones_dict 
         
         self.puntaje_final_postulacion = 0.0
-
-    def calcular_puntos_adicionales(self):
-        """
-        Suma puntos de acción afirmativa según Acuerdo SENESCYT 2024-0055.
-        Incluye Puntos por Territorialidad (Reglamento Interno).
-        """
-        puntos_extra = 0
+        self.puntos_extra = 0
         
-        if self.es_pueblo_nacionalidad: puntos_extra += 15
-        if self.tiene_discapacidad: puntos_extra += 10
-        if self.es_vulnerable_econom: puntos_extra += 15
-        if self.es_residente_local: puntos_extra += 5  # Puntos por ser de la zona (ej. Manabí)
-        
-        # La norma suele poner un techo máximo a los puntos extra (ej. 45 pts)
-        return min(puntos_extra, 45)
+        # INYECCIÓN DE DEPENDENCIA (Strategy Pattern)
+        # El aspirante "usa" una calculadora, no "es" la calculadora.
+        self.calculadora = CalculadoraPuntaje()
 
-    def calcular_puntaje_final(self, nota_evaluacion):
+    def calcular_puntaje_final(self, nota_examen):
         """
-        Fórmula: (Nota Examen * Peso) + (Nota Grado * Peso) + Puntos Extra
-        Según Reglamento ULEAM/Senescyt.
+        Orquesta el cálculo final: (NotaGrado + NotaExamen) + PuntosExtras
         """
-        peso_eval = 0.50 # Puede variar según la IES
+        # 1. Delegamos el cálculo complejo a la clase experta
+        self.puntos_extra, detalles = self.calculadora.calcular_accion_afirmativa(self.condiciones)
+        
+        # 2. Ponderación (50% Bachillerato + 50% Examen según ULEAM)
+        peso_eval = 0.50
         peso_bach = 0.50
         
-        puntos_accion_afirmativa = self.calcular_puntos_adicionales()
+        parcial = (nota_examen * peso_eval) + (self.nota_bachillerato * peso_bach)
+        total = parcial + self.puntos_extra
         
-        self.puntaje_final_postulacion = (nota_evaluacion * peso_eval) + \
-                                         (self.nota_bachillerato * peso_bach) + \
-                                         puntos_accion_afirmativa
+        self.puntaje_final_postulacion = total
         
-        print(f"\n--- CÁLCULO DE PUNTAJE (Normativa 2025) ---")
-        print(f"Aspirante: {self.nombres} {self.apellidos}")
-        print(f"1. Mérito Académico (50%): {self.nota_bachillerato * peso_bach}")
-        print(f"2. Evaluación (50%): {nota_evaluacion * peso_eval}")
-        print(f"3. Acción Afirmativa (Territorialidad/Vuln): +{puntos_accion_afirmativa}")
-        print(f"TOTAL POSTULACIÓN: {self.puntaje_final_postulacion}")
+        # Reporte en consola para depuración
+        print(f"\n--- REPORTE DE PUNTAJE: {self.nombres} ---")
+        print(f" Nota Grado (50%): {self.nota_bachillerato * peso_bach}")
+        print(f" Nota Examen (50%): {nota_examen * peso_eval}")
+        print(f" Puntos Acción Afirmativa: +{self.puntos_extra}")
+        print(f"   Detalles: {', '.join(detalles)}")
+        print(f" TOTAL FINAL: {self.puntaje_final_postulacion}")
         
-        return self.puntaje_final_postulacion
+        return self.puntaje_final_postulacion, self.puntos_extra, detalles
