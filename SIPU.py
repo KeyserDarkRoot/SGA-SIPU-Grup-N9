@@ -217,15 +217,16 @@ class SistemaSIPU:
         
         # Colores
         color_sidebar = "#2c3e50"
-        color_main = "#ecf0f1"
+        color_main = "#f4f7f6"
+        color_accent = "#3498db"
 
         # --- SIDEBAR (Panel Izquierdo) ---
-        sidebar = tk.Frame(self.root, bg=color_sidebar, width=250)
+        sidebar = tk.Frame(self.root, bg=color_sidebar, width=280)
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 
-        tk.Label(sidebar, text="SIPU", font=("Helvetica", 30, "bold"), bg=color_sidebar, fg="white", pady=20).pack()
-        tk.Frame(sidebar, bg="white", height=1, width=200).pack(pady=10)
+        tk.Label(sidebar, text="SIPU", font=("Helvetica", 32, "bold"), bg=color_sidebar, fg="white", pady=30).pack()
+        tk.Frame(sidebar, bg="#34495e", height=2, width=220).pack(pady=10)
         
         # Info Usuario
         tk.Label(sidebar, text=f"C.I: {self.usuario_actual['cedula']}", bg=color_sidebar, fg="#bdc3c7").pack(pady=5)
@@ -241,38 +242,75 @@ class SistemaSIPU:
         main_area.pack(side="right", expand=True, fill="both")
 
         # Cabecera
-        header = tk.Frame(main_area, bg="white", height=100)
-        header.pack(fill="x", padx=20, pady=20)
+        header = tk.Frame(main_area, bg="white", height=120)
+        header.pack(fill="x", padx=30, pady=30)
         
         tk.Label(header, text="Sistema de Inscripción y Postulación a las Universidades", 
                  font=("Helvetica", 18, "bold"), bg="white").pack(pady=(10, 0))
-        tk.Label(header, text=f"Bienvenido(a), {self.usuario_actual['nombres']}", 
+        nombre_completo = f"{self.usuario_actual['nombres']} {self.usuario_actual['apellidos']}"
+        tk.Label(header, text=f"Bienvenido(a), {nombre_completo}", 
                  font=("Helvetica", 14), bg="white", fg="#7f8c8d").pack(pady=10)
 
-        # --- SECCIONES DESPLEGABLES (Fases) ---
-        self.crear_acordion(main_area, "FASE 1: REGISTRO NACIONAL", "Estado: REALIZADO ✅")
-        self.crear_acordion(main_area, "FASE 2: INSCRIPCIÓN", "Seleccione una opción:", botones=True)
+        # --- CONSULTA DE ESTADO EN SUPABASE ---
+        estado_rn = "NO REGISTRADO"
+        color_estado = "gray"
+        icono = "❓"
 
-    def crear_acordion(self, parent, titulo, contenido, botones=False):
-        f = tk.Frame(parent, bg="white", bd=1, relief="groove")
-        f.pack(fill="x", padx=40, pady=10)
-        
-        lbl_titulo = tk.Label(f, text=titulo, font=("Arial", 11, "bold"), bg="#f8f9fa", anchor="w", padx=10)
-        lbl_titulo.pack(fill="x")
+        try:
+            res_estado = self.supabase.table("registronacional").select("estadoregistronacional").eq("identificacion", self.usuario_actual['cedula']).execute()
+            if res_estado.data:
+                val = res_estado.data[0]['estadoregistronacional'].upper()
+                estado_rn = val
+                if val == "HABILITADO":
+                    color_estado = "#2ecc71" # Verde
+                    icono = "✅"
+                elif val == "CONDICIONADO":
+                    color_estado = "#f1c40f" # Amarillo
+                    icono = "⚠️"
+                else:
+                    color_estado = "#e74c3c" # Rojo
+                    icono = "❌"
+        except:
+            estado_rn = "ERROR DE CONEXIÓN"
 
-        detalles = tk.Frame(f, bg="white", pady=15)
+        # --- SECCIONES (Fases) ---
+        self.crear_acordion_pro(main_area, "FASE 1: REGISTRO NACIONAL", 
+                               f"Su estado actual es: {estado_rn} {icono}", color_estado)
         
+        self.crear_acordion_pro(main_area, "FASE 2: INSCRIPCIÓN Y EVALUACIÓN", 
+                               "Complete su inscripción para la sede de examen.", "#3498db", botones=True)
+
+    def crear_acordion_pro(self, parent, titulo, contenido, color_status, botones=False):
+        # Contenedor principal de la tarjeta
+        card = tk.Frame(parent, bg="white", bd=0, highlightthickness=1, highlightbackground="#dcdde1")
+        card.pack(fill="x", padx=60, pady=10)
+        
+        # Encabezado de la fase
+        head = tk.Frame(card, bg="#f8f9fa", height=40)
+        head.pack(fill="x")
+        tk.Label(head, text=titulo, font=("Arial", 10, "bold"), bg="#f8f9fa", fg="#34495e", padx=15).pack(side="left")
+
+        # Cuerpo
+        body = tk.Frame(card, bg="white", pady=20)
+        body.pack(fill="x", padx=20)
+
         if not botones:
-            tk.Label(detalles, text=contenido, bg="white", font=("Arial", 10)).pack(padx=20)
+            lbl_status = tk.Label(body, text=contenido, font=("Arial", 12, "bold"), fg=color_status, bg="white")
+            lbl_status.pack(anchor="w")
         else:
-            tk.Label(detalles, text=contenido, bg="white").pack(pady=5)
-            btn_frame = tk.Frame(detalles, bg="white")
-            btn_frame.pack()
-            ttk.Button(btn_frame, text="Registrarse").pack(side="left", padx=5)
-            ttk.Button(btn_frame, text="Certificado").pack(side="left", padx=5)
-
-        # Lógica de despliegue
-        detalles.pack(fill="x") # Por defecto abierto, se puede añadir lógica para ocultar
+            tk.Label(body, text=contenido, bg="white", font=("Arial", 11)).pack(anchor="w", pady=(0, 15))
+            btn_frame = tk.Frame(body, bg="white")
+            btn_frame.pack(anchor="w")
+            
+            # Botones con estilo ttk
+            style = ttk.Style()
+            style.configure("Accent.TButton", font=("Arial", 10, "bold"))
+            
+            btn_reg = ttk.Button(btn_frame, text="Realizar Inscripción", width=25)
+            btn_reg.pack(side="left", padx=(0, 10))
+            
+            btn_cert = ttk.Button(btn_frame, text="Descargar Certificado", width=25)
+            btn_cert.pack(side="left")
 
 if __name__ == "__main__":
     root = tk.Tk()
