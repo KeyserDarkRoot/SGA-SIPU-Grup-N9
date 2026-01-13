@@ -153,39 +153,60 @@ class SistemaSIPU:
             print(f"Error Registro: {e}")
             messagebox.showerror("Error", f"No se pudo completar el registro: {e}")
             
+    # --- VISTA DE RECUPERACIÓN ESTILIZADA ---
     def proceso_recuperar(self):
+        """Muestra el formulario de recuperación con el mismo estilo que el login"""
+        self.limpiar_pantalla()
+        self.root.state('normal')
         self.root.geometry("400x500")
         
-        cedula = simpledialog.askstring("Recuperar contraseña", "Ingrese su cédula/pasaporte:")
-        if not cedula: return
+        frame = tk.Frame(self.root, bg="white", padx=40, pady=40)
+        frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        tk.Label(frame, text="SIPU", font=("Helvetica", 24, "bold"), bg="white", fg="#2c3e50").pack(pady=10)
+        tk.Label(frame, text="Recuperar Contraseña", font=("Helvetica", 12), bg="white", fg="gray").pack()
+
+        tk.Label(frame, text="Ingrese su Cédula/Pasaporte:", bg="white").pack(anchor="w", pady=(30, 0))
+        self.ent_cedula_rec = ttk.Entry(frame, width=30)
+        self.ent_cedula_rec.pack(pady=5)
+        self.ent_cedula_rec.focus_set() # Pone el cursor automáticamente aquí
+
+        # Botón para ejecutar la lógica
+        ttk.Button(frame, text="Enviar Contraseña", command=self.ejecutar_recuperacion).pack(pady=20, fill="x")
+        
+        # Botón para volver
+        tk.Button(frame, text="Volver al inicio de sesión", fg="#3498db", bg="white", borderwidth=0, 
+                  command=self.mostrar_login).pack()
+
+    def ejecutar_recuperacion(self):
+        """Lógica que consulta Supabase y envía el correo"""
+        cedula = self.ent_cedula_rec.get().strip()
+        
+        if not cedula:
+            messagebox.showwarning("Atención", "Por favor, ingrese su identificación.")
+            return
 
         try:
-            # Buscamos en la tabla 'usuarios' con los nombres de columna actualizados
+            # Consultamos los datos
             res = self.supabase.table("usuarios").select("correo", "contrasena", "nombres", "apellidos").eq("cedula", cedula).execute()
             
             if res.data:
                 u = res.data[0]
                 asunto = "Recuperación de Acceso SIPU"
-                # Usamos 'nombres' que es tu nueva columna
                 mensaje = f"Hola {u['nombres']} {u['apellidos']},\n\nTu contraseña registrada en SIPU es: {u['contrasena']}"
                 
                 # Intentar enviar
-                exito = self.enviar_correo(u['correo'], asunto, mensaje)
-                
-                if exito:
-                    messagebox.showinfo("Éxito", f"Clave enviada al correo: {u['correo']}")
+                if self.enviar_correo(u['correo'], asunto, mensaje):
+                    messagebox.showinfo("Éxito", f"La contraseña ha sido enviada al correo:\n{u['correo']}")
+                    self.mostrar_login() # Regresamos al login tras el éxito
                 else:
-                    # Este error sale si la clave de aplicación o el correo emisor están mal
-                    messagebox.showerror("Error SMTP", 
-                        "No se pudo conectar con el servidor de Gmail.\n\n"
-                        "Verifique:\n1. Que EMAIL_PASSWORD sea una 'Contraseña de Aplicación' de 16 letras.\n"
-                        "2. Que tenga conexión a internet.")
+                    messagebox.showerror("Error", "No se pudo conectar con el servidor de correos.\nVerifique su conexión o clave de aplicación.")
             else:
-                messagebox.showerror("Error", "La cédula ingresada no está registrada.")
+                messagebox.showerror("No Encontrado", "La identificación ingresada no existe en nuestro sistema.")
                 
         except Exception as e:
-            print(f"Error en Recuperar: {e}")
-            messagebox.showerror("Error", "Ocurrió un error al consultar la base de datos.")
+            print(f"Error en BD: {e}")
+            messagebox.showerror("Error", "Error al conectar con la base de datos.")
             
 
 
