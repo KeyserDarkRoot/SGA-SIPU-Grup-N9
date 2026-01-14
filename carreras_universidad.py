@@ -1,54 +1,29 @@
-from oferta_academica import OfertaAcademica
+from ConexionBD.api_supabase import crear_cliente
 
 class Carrera:
-    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles):
+    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles, idOferta=None):
         self.__idCarrera = idCarrera
         self.nombreCarrera = nombreCarrera
         self.facultad = facultad
         self.modalidad = modalidad
         self.duracion = duracion
         self.cuposDisponibles = cuposDisponibles
+        self.idOferta = idOferta
+        self.client = crear_cliente() 
 
     def asignarCupos(self, numero):
         self.cuposDisponibles += numero
-        print(f"{numero} cupos asignados a {self.nombreCarrera}. Total: {self.cuposDisponibles}")
+        print(f"Actualizando cupos en Base de Datos para {self.nombreCarrera}...")
+        
+        try:
+            # Actualizamos la tabla 'carrera' en Supabase
+            self.client.table("carrera").update({
+                "cuposdisponibles": self.cuposDisponibles
+            }).eq("idcarrera", self.__idCarrera).execute()
+            
+            print(f"Cupos actualizados. Disponibles: {self.cuposDisponibles}")
+        except Exception as e:
+            print(f"Error al actualizar cupos en BD: {e}")
 
     def obtenerinfo(self):
-        print(f"Carrera: {self.nombreCarrera}")
-        print(f"Facultad: {self.facultad}")
-        print(f"Modalidad: {self.modalidad}")
-        print(f"Duración: {self.duracion}")
-        print(f"Cupos disponibles: {self.cuposDisponibles}")
-
-
-class CarreraVirtual(Carrera):
-    def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles, plataforma):
-        super().__init__(idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles)
-        self.plataforma = plataforma
-
-    def obtenerinfo(self):
-        super().obtenerinfo()
-        print(f"Modalidad virtual - Plataforma: {self.plataforma}")
-
-
-
-
-'''class Aspirante(Carrera, OfertaAcademica):
-    def __init__(self, idAspirante, nombre, carrera_interes):
-        self.idAspirante = idAspirante
-        self.nombre = nombre
-        self.carrera_interes = carrera_interes
-
-    def mostrarInteres(self):
-        print(f"{self.nombre} está interesado en la carrera {self.carrera_interes.nombreCarrera}")
-
-
-# HERENCIA DE HERENCIA
-class AspiranteBecado(Aspirante):   # Hereda de Aspirante (que puede heredar de otras)
-    def __init__(self, idAspirante, nombre, carrera_interes, tipoBeca):
-        super().__init__(idAspirante, nombre, carrera_interes)
-        self.tipoBeca = tipoBeca
-
-    def mostrarInteres(self):
-        super().mostrarInteres()
-        print(f"Tiene una beca de tipo: {self.tipoBeca}")'''
+        print(f"Carrera: {self.nombreCarrera} | Cupos: {self.cuposDisponibles}")
