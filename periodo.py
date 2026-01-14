@@ -84,10 +84,13 @@ class Periodo:
             print("Error al cerrar el periodo:", e)
 
     # Verificar si hay un periodo activo
-    @staticmethod
-    def obtener_periodo_activo(self):
+    @classmethod
+    def obtener_periodo_activo(cls, db=None):
+        if db is None:
+            db = SupabasePeriodoDB()
         try:
-            response = self.db.buscar_activo()
+            # Aquí usamos 'db' directamente, ya no usamos 'self'
+            response = db.buscar_activo()
 
             if response.data:
                 print(f"Periodo activo: {response.data[0]['nombreperiodo']}")
@@ -95,11 +98,10 @@ class Periodo:
             else:
                 print("No hay ningún periodo activo.")
                 return None
-
         except Exception as e:
             print("Error al verificar el periodo activo:", e)
             return None
-
+        
     # Validar si una fecha está dentro del rango del periodo
     def validar_fecha_actual(self, fecha_actual_str):
         inicio = datetime.fromisoformat(self.fecha_inicio)
