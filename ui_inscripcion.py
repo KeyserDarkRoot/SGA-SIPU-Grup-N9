@@ -1,66 +1,137 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
-from inscripcion import Inscripcion # Importamos TU clase
+from tkinter import ttk, messagebox
+from inscripcion import Inscripcion
+from periodo import Periodo
 
-class VentanaFormularioInscripcion:
-    def __init__(self, root, datos_rn):
-        self.root = root
-        self.root.title("Formulario de Inscripción - SIPU")
-        self.datos_rn = datos_rn # Aquí vienen nombres, apellidos, estado, etc.
-
-        # Contenedor
-        self.frame = tk.Frame(self.root, padx=20, pady=20)
-        self.frame.pack()
-
-        # Mostrar Datos del Registro Nacional (Lectura)
-        tk.Label(self.frame, text=f"Aspirante: {datos_rn['nombres']} {datos_rn['apellidos']}", font=("Arial", 10, "bold")).pack(pady=5)
+class VistaInscripcion(tk.Frame):
+    def __init__(self, parent, sipu_app):
+        super().__init__(parent, bg="white")
+        self.sipu = sipu_app  # Referencia a la app principal
+        self.usuario = sipu_app.usuario_actual
+        self.supabase = sipu_app.supabase
         
-        # Etiqueta de aviso para CONDICIONADOS
-        if datos_rn.get('estadoRegistroNacional') == 'CONDICIONADO':
-            lbl_aviso = tk.Label(self.frame, text="ESTADO: CONDICIONADO (Sujeto a revisión)", fg="orange", font=("Arial", 9, "italic"))
-            lbl_aviso.pack()
+        # Almacén de datos temporal
+        self.seleccion = {"ies_id": None, "carrera": None, "bloque": None}
+        
+        self.setup_ui()
 
-        # Entrada de Carrera (Lo que pide tu clase)
-        tk.Label(self.frame, text="Seleccione Carrera:").pack(pady=(10,0))
-        self.combo_carrera = ttk.Combobox(self.frame, values=["Ingeniería de Software", "Medicina", "Derecho", "Arquitectura"])
-        self.combo_carrera.pack(pady=5)
+    def setup_ui(self):
+        # 1. BARRA DE PASOS (Encabezado)
+        self.header_steps = tk.Frame(self, bg="#f8f9fa", height=60)
+        self.header_steps.pack(fill="x")
+        
+        self.pasos_labels = {}
+        for i, texto in enumerate(["1. DATOS PERSONALES", "2. UNIVERSIDAD Y BLOQUE", "3. POSTULACIÓN"]):
+            lbl = tk.Label(self.header_steps, text=texto, font=("Helvetica", 9, "bold"), 
+                           bg="#f8f9fa", fg="#bdc3c7", padx=20)
+            lbl.pack(side="left", expand=True)
+            self.pasos_labels[i+1] = lbl
 
-        # Entrada de IES_ID
-        tk.Label(self.frame, text="ID de la Institución (IES_ID):").pack()
-        self.ent_ies = tk.Entry(self.frame)
-        self.ent_ies.insert(0, "101") # Valor ejemplo
-        self.ent_ies.pack(pady=5)
+        # 2. CONTENEDOR DINÁMICO
+        self.contenedor_pasos = tk.Frame(self, bg="white", padx=40, pady=20)
+        self.contenedor_pasos.pack(fill="both", expand=True)
 
-        # Botón para Guardar usando tu método 'guardar_en_supabase'
-        self.btn_inscribir = tk.Button(self.frame, text="Finalizar Inscripción", 
-                                       command=self.ejecutar_inscripcion, bg="#2ecc71", fg="white")
-        self.btn_inscribir.pack(pady=20)
+        self.ir_paso_1()
 
-    def ejecutar_inscripcion(self):
-        carrera = self.combo_carrera.get()
-        ies = self.ent_ies.get()
+    def limpiar_paso(self, num_paso):
+        for w in self.contenedor_pasos.winfo_children(): w.destroy()
+        for k, v in self.pasos_labels.items():
+            v.config(fg="#bdc3c7", bg="#f8f9fa")
+        self.pasos_labels[num_paso].config(fg="#3498db", bg="white")
 
-        if not carrera:
-            messagebox.showwarning("Error", "Debe seleccionar una carrera")
-            return
+    # --- PASO 1: DATOS PERSONALES ---
+    def ir_paso_1(self):
+        self.limpiar_paso(1)
+        tk.Label(self.contenedor_pasos, text="Datos del Registro Nacional", font=("Arial", 14, "bold"), bg="white").pack(anchor="w", pady=10)
+        
+        # Consultar datos de registronacional
+        res = self.supabase.table("registronacional").select("*").eq("identificacion", self.usuario['cedula']).execute()
+        datos_rn = res.data[0] if res.data else {}
 
-        # INSTANCIAMOS TU CLASE
-        # Usamos los datos que ya validó el Registro Nacional + los de la interfaz
-        nueva_inscripcion = Inscripcion(
-            periodo_id=None, # Tu método validar_periodo lo asignará automáticamente
-            ies_id=ies,
-            tipo_documento=self.datos_rn.get('tipoDocumento', 'cédula'),
-            identificacion=self.datos_rn['identificacion'],
-            nombres=self.datos_rn['nombres'],
-            apellidos=self.datos_rn['apellidos'],
-            carrera_seleccionada=carrera
-        )
+        # Rejilla de datos (Solo lectura)
+        grid = tk.Frame(self.contenedor_pasos, bg="white")
+        grid.pack(fill="x", pady=20)
 
-        # LLAMAMOS A TU MÉTODO DE ABSTRACCIÓN
-        # Este método ya valida el periodo, inserta, registra y genera certificado
-        try:
-            nueva_inscripcion.guardar_en_supabase()
-            messagebox.showinfo("Éxito", f"Inscripción guardada.\nCertificado generado para {self.datos_rn['nombres']}")
-            self.root.destroy()
-        except Exception as e:
-            messagebox.showerror("Error", f"Fallo al guardar: {e}")
+        campos = [
+            ("Identificación", "identificacion"), ("Nombres", "nombres"),
+            ("Apellidos", "apellidos"), ("Nacionalidad", "nacionalidad"),
+            ("Fecha Nacimiento", "fechanacimiento"), ("Sexo", "sexo"),
+            ("Género", "genero"), ("Autoidentificación", "autoidentificacion")
+        ]
+
+        for i, (label, key) in enumerate(campos):
+            r, c = divmod(i, 2)
+            tk.Label(grid, text=f"{label}:", bg="white", fg="gray").grid(row=r, column=c*2, sticky="w", pady=5)
+            val = tk.Label(grid, text=datos_rn.get(key, "N/A"), bg="white", font=("Arial", 10, "bold"))
+            val.grid(row=r, column=c*2+1, sticky="w", padx=(10, 40))
+
+        ttk.Button(self.contenedor_pasos, text="Siguiente", command=self.ir_paso_2).pack(anchor="e")
+
+    # --- PASO 2: BLOQUE DE CONOCIMIENTO ---
+    def ir_paso_2(self):
+        self.limpiar_paso(2)
+        tk.Label(self.contenedor_pasos, text="Selección de Universidad y Carrera", font=("Arial", 14, "bold"), bg="white").pack(anchor="w")
+
+        # Universidad
+        tk.Label(self.contenedor_pasos, text="Elija la Universidad:", bg="white").pack(anchor="w", pady=(20,5))
+        self.cb_uni = ttk.Combobox(self.contenedor_pasos, width=50, state="readonly")
+        self.cb_uni.pack(anchor="w")
+        
+        res_uni = self.supabase.table("universidad").select("ies_id, nombre").execute()
+        unis = {u['nombre']: u['ies_id'] for u in res_uni.data}
+        self.cb_uni['values'] = list(unis.keys())
+
+        # Tabla de Carreras (Simulando Bloques de Conocimiento)
+        tk.Label(self.contenedor_pasos, text="Oferta Académica:", bg="white").pack(anchor="w", pady=(20,5))
+        self.tree = ttk.Treeview(self.contenedor_pasos, columns=("Bloque", "Carrera", "Cupos"), show="headings", height=8)
+        self.tree.heading("Bloque", text="Bloque de Conocimiento")
+        self.tree.heading("Carrera", text="Carrera")
+        self.tree.heading("Cupos", text="Cupos")
+        self.tree.pack(fill="x")
+
+        # Cargar datos de oferta_academica
+        res_oferta = self.supabase.table("oferta_academica").select("*").execute()
+        for o in res_oferta.data:
+            self.tree.insert("", "end", values=(o['BloqueConocimiento'], o['nombre_carrera'], o['cupos_disponibles']))
+
+        def guardar_seleccion():
+            sel = self.tree.selection()
+            if not sel or not self.cb_uni.get():
+                messagebox.showwarning("Atención", "Seleccione universidad y carrera")
+                return
+            item = self.tree.item(sel[0])['values']
+            self.seleccion = {"ies_id": unis[self.cb_uni.get()], "carrera": item[1], "bloque": item[0]}
+            self.ir_paso_3()
+
+        btn_f = tk.Frame(self.contenedor_pasos, bg="white")
+        btn_f.pack(fill="x", pady=20)
+        ttk.Button(btn_f, text="Atrás", command=self.ir_paso_1).pack(side="left")
+        ttk.Button(btn_f, text="Siguiente", command=guardar_seleccion).pack(side="right")
+
+    # --- PASO 3: POSTULACIÓN ---
+    def ir_paso_3(self):
+        self.limpiar_paso(3)
+        tk.Label(self.contenedor_pasos, text="Confirmación de Postulación", font=("Arial", 14, "bold"), bg="white").pack(anchor="w")
+        
+        resumen = f"Carrera: {self.seleccion['carrera']}\nBloque: {self.seleccion['bloque']}\nIES ID: {self.seleccion['ies_id']}"
+        tk.Label(self.contenedor_pasos, text=resumen, bg="#f1f2f6", justify="left", padx=20, pady=20, font=("Courier", 11)).pack(fill="x", pady=20)
+
+        def finalizar():
+            try:
+                # INSTANCIA DE TU CLASE INSCRIPCION.PY
+                nueva = Inscripcion(
+                    periodo_id=None, # Se valida en guardar_en_supabase
+                    ies_id=self.seleccion['ies_id'],
+                    tipo_documento="Cédula",
+                    identificacion=self.usuario['cedula'],
+                    nombres=self.usuario['nombres'],
+                    apellidos=self.usuario['apellidos'],
+                    carrera_seleccionada=self.seleccion['carrera']
+                )
+                nueva.guardar_en_supabase() # Tu método ya hace todo el trabajo
+                messagebox.showinfo("Éxito", "Inscripción registrada correctamente.")
+                self.sipu.abrir_dashboard() # Volver al inicio
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo guardar: {e}")
+
+        ttk.Button(self.contenedor_pasos, text="FINALIZAR REGISTRO", command=finalizar).pack()
