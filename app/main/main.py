@@ -1,13 +1,13 @@
 import os
 import sys
-from ConexionBD.api_supabase import crear_cliente
-from periodo import Periodo
-from oferta_academica import OfertaAcademica
-from carreras_universidad import Carrera
-from aspirante import Aspirante
-from inscripcion import Inscripcion
-from evaluacion import Evaluacion
-from postulacion import Postulacion
+from app.database.ConexionBD.api_supabase import crear_cliente
+from app.core.periodo import Periodo
+from app.core.oferta_academica import OfertaAcademica
+from app.core.carreras_universidad import Carrera
+from app.core.aspirante import Aspirante
+from app.core.inscripcion import Inscripcion
+from app.core.evaluacion import Evaluacion
+from app.core.postulacion import Postulacion
 
 # Cliente Global para consultas directas en el Main
 supabase = crear_cliente()

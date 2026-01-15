@@ -1,4 +1,4 @@
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 class Carrera:
     def __init__(self, idCarrera, nombreCarrera, facultad, modalidad, duracion, cuposDisponibles, idOferta=None):

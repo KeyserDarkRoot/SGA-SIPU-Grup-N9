@@ -1,8 +1,8 @@
 from datetime import datetime
 import uuid
 
-from periodo import Periodo, TienePeriodo
-from ConexionBD.api_supabase import crear_cliente
+from app.core.periodo import Periodo, TienePeriodo
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 
 class Inscripcion(TienePeriodo):

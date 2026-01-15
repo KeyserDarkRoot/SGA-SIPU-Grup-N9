@@ -1,6 +1,6 @@
 from datetime import datetime
 from abc import ABC, abstractmethod
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 class IPeriodoDB(ABC):
     @abstractmethod
@@ -64,12 +64,12 @@ class Periodo:
     # Activar un periodo (solo uno puede estar activo)
     def activar_periodo(self):
         try:
-            # Primero cerrar el que esté activo
-            self.db.actualizar(self.id_periodo, {"estado": "cerrado"})
+            # Cerrar todos los activos
+            self.client.table("periodo").update({"estado":"cerrado"}).eq("estado","activo").execute()
 
-            # Luego activar este
-            self.db.actualizar(self.id_periodo, {"estado": "activo"})
-            self.estado = "activo"
+            # Activar el actual
+            self.db.actualizar(self.id_periodo, {"estado":"activo"})
+
 
             print(f"Periodo {self.nombre_periodo} activado correctamente.")
         except Exception as e:
@@ -84,13 +84,9 @@ class Periodo:
             print("Error al cerrar el periodo:", e)
 
     # Verificar si hay un periodo activo
-    @classmethod
-    def obtener_periodo_activo(cls, db=None):
-        if db is None:
-            db = SupabasePeriodoDB()
+    def obtener_periodo_activo(self):
         try:
-            # Aquí usamos 'db' directamente, ya no usamos 'self'
-            response = db.buscar_activo()
+            response = self.db.buscar_activo()
 
             if response.data:
                 print(f"Periodo activo: {response.data[0]['nombreperiodo']}")
@@ -98,10 +94,11 @@ class Periodo:
             else:
                 print("No hay ningún periodo activo.")
                 return None
+
         except Exception as e:
             print("Error al verificar el periodo activo:", e)
             return None
-        
+
     # Validar si una fecha está dentro del rango del periodo
     def validar_fecha_actual(self, fecha_actual_str):
         inicio = datetime.fromisoformat(self.fecha_inicio)

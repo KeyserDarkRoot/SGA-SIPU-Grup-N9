@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk, simpledialog
 import webbrowser # Para simular el envío de correos o links
 import smtplib
 from email.message import EmailMessage
-from ConexionBD.api_supabase import crear_cliente  # Tu archivo existente
+from app.database.ConexionBD.api_supabase import crear_cliente  # Tu archivo existente
 
 class SistemaSIPU:
     def __init__(self, root):
@@ -314,7 +314,7 @@ class SistemaSIPU:
             btn_cert.pack(side="left")
             
     def mostrar_formulario_inscripcion(self):
-        from ui_inscripcion import VistaInscripcion
+        from app.ui.ui_inscripcion import VistaInscripcion
         # Limpiamos el contenido del área principal (conservando el sidebar)
         for widget in self.main_area.winfo_children():
             widget.destroy()

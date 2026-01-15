@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 # Interfaz general de notificación
 class INotificacion(ABC):

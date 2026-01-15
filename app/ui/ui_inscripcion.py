@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from inscripcion import Inscripcion
-from periodo import Periodo
+from app.core.inscripcion import Inscripcion
+from app.core.periodo import Periodo
 
 class VistaInscripcion(tk.Frame):
     def __init__(self, parent, sipu_app):

@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from serviciosExternos import ServicioRegistroNacional
+from app.services.serviciosExternos import ServicioRegistroNacional
 # Importamos la interfaz que creamos en el otro archivo
-from ui_inscripcion import VentanaFormularioInscripcion
+from app.ui.ui_inscripcion import VentanaFormularioInscripcion
 
 class VentanaPrincipal:
     def __init__(self, root):

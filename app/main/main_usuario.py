@@ -1,4 +1,4 @@
-from inscripcion import Inscripcion, obtener_periodos_disponibles, obtener_sedes
+from app.core.inscripcion import Inscripcion, obtener_periodos_disponibles, obtener_sedes
 
 def menu():
     print("\n===== SISTEMA DE INSCRIPCIÓN U =====")

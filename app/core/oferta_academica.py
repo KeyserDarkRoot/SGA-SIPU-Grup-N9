@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from ConexionBD.api_supabase import crear_cliente
-from periodo import Periodo
+from app.database.ConexionBD.api_supabase import crear_cliente
+from app.core.periodo import Periodo
 
 
 # Interfaces pequeñas (ISP)

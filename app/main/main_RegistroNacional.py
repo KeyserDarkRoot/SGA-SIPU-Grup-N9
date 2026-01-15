@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from datetime import datetime
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 class RegistroNacional:
     def __init__(self):

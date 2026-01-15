@@ -1,7 +1,7 @@
 import uuid
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 # Importamos la lógica matemática que acabamos de crear
-from calculadora import CalculadoraPuntaje 
+from app.core.calculadora import CalculadoraPuntaje 
 
 class Aspirante:
     def __init__(self, identificacion, nombres, apellidos, correo, nota_grado, condiciones_dict):

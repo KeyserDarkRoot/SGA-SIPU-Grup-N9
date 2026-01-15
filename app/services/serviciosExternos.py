@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ConexionBD.api_supabase import crear_cliente
+from app.database.ConexionBD.api_supabase import crear_cliente
 
 # Interfaz para cumplir con el principio de Inversión de Dependencias
 class IServicioConsulta(ABC):
