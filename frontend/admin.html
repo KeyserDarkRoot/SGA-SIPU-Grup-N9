@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SIPU - Panel Admin</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+<h1>SIPU</h1>
+<hr>
+<p>ADMINISTRADOR</p>
+
+<button onclick="show('periodo')">📅 Períodos</button>
+<button onclick="show('oferta')">🎓 Oferta Académica</button>
+<button onclick="show('universidad')">🏫 Universidades</button>
+<button onclick="show('postulaciones')">📋 Postulaciones</button>
+
+<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- PERIODO -->
+<div id="periodo" class="panel">
+<h2>Gestión de Períodos</h2>
+
+<input id="p_nombre" placeholder="Nombre período">
+<input id="p_inicio" type="date">
+<input id="p_fin" type="date">
+
+<button onclick="crearPeriodo()">Crear período</button>
+
+<div id="lista_periodos"></div>
+</div>
+
+<!-- OFERTA -->
+<div id="oferta" class="panel">
+<h2>Oferta Académica</h2>
+
+<input id="o_carrera" placeholder="Carrera">
+<input id="o_bloque" placeholder="Bloque conocimiento">
+<input id="o_cupos" type="number" placeholder="Cupos">
+
+<button onclick="crearOferta()">Crear oferta</button>
+
+<div id="lista_ofertas"></div>
+</div>
+
+<!-- UNIVERSIDAD -->
+<div id="universidad" class="panel">
+<h2>Universidades</h2>
+
+<input id="u_nombre" placeholder="Nombre universidad">
+<input id="u_dir" placeholder="Dirección">
+
+<button onclick="crearUniversidad()">Crear universidad</button>
+
+<div id="lista_universidades"></div>
+</div>
+
+<!-- POSTULACIONES -->
+<div id="postulaciones" class="panel">
+<h2>Postulaciones</h2>
+<div id="tabla_post"></div>
+</div>
+
+</div>
+</div>
+
+<script src="js/admin.js"></script>
+</body>
+</html>
