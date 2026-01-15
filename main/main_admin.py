@@ -1,6 +1,6 @@
-from app.core.periodo import Periodo
-from app.core.oferta_academica import OfertaAcademica
-from app.core.carreras_universidad import Carrera
+from backend.app.core.periodo import Periodo
+from backend.app.core.oferta_academica import OfertaAcademica
+from backend.app.core.carreras_universidad import Carrera
 
 def menu():
     print("\n===== PANEL ADMINISTRADOR =====")

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>SIPU - Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <h1>SIPU</h1>
+    <hr>
+
+    <p id="cedula"></p>
+    <p id="correo" class="small"></p>
+
+    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- HEADER -->
+    <div class="header">
+      <h2>Sistema de Inscripción y Postulación a las Universidades</h2>
+      <p id="bienvenida"></p>
+    </div>
+
+    <!-- FASES -->
+    <div id="fases"></div>
+
+  </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>
