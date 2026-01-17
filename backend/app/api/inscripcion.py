@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.database.ConexionBD.api_supabase import crear_cliente
 from app.core.inscripcion import Inscripcion
-
+from datetime import datetime
 router_inscripcion=APIRouter()
 db=crear_cliente()
 
@@ -25,18 +25,131 @@ def oferta():
           .select("*")\
           .execute().data
 
+
 @router_inscripcion.post("/finalizar")
-def finalizar(d:dict):
+def finalizar_inscripcion(d:dict):
 
- nueva=Inscripcion(
-  periodo_id=None,
-  ies_id=d["ies_id"],
-  tipo_documento="Cédula",
-  identificacion=d["cedula"],
-  nombres=d["nombres"],
-  apellidos=d["apellidos"],
-  carrera_seleccionada=d["carrera"]
- )
+    try:
 
- nueva.guardar_en_supabase()
- return {"ok":True}
+        # 1) sede
+        s = db.table("sede")\
+              .select("nombre_sede,ies_id")\
+              .eq("sede_id", d["sede_id"])\
+              .execute()
+
+        nombre_sede = s.data[0]["nombre_sede"]
+        ies_real = s.data[0]["ies_id"]
+
+        # 2) INSCRIPCION
+        ins = {
+            "periodo_id": int(d["periodo_id"]),
+            "ies_id": int(ies_real),
+            "tipo_documento": d["tipo_documento"],
+            "identificacion": d["cedula"],
+            "nombres": d["nombres"],
+            "apellidos": d["apellidos"],
+            "fecha_inscripcion": datetime.now().isoformat(),
+            "estado": "registrado",
+            "nombre_sede": nombre_sede,
+            "sede_id": d["sede_id"]
+        }
+
+        r = db.table("inscripciones").insert(ins).execute()
+        id_ins = r.data[0]["id_inscripcion"]
+
+        # 3) GUARDAR CARRERAS
+        for i,c in enumerate(d["carreras"], start=1):
+
+            db.table("inscripcion_carreras")\
+              .insert({
+                "id_inscripcion": id_ins,
+                "ofa_id": c,
+                "prioridad": i
+              }).execute()
+
+        return {"ok":True}
+
+    except Exception as e:
+        return {"ok":False,"msg":str(e)}
+
+
+
+@router_inscripcion.get("/ofertas")
+def listar_ofertas():
+
+    res = db.table("oferta_academica")\
+            .select(
+              "ofa_id,nombre_carrera,BloqueConocimiento,"+
+              "cupos_disponibles,modalidad,jornada,"+
+              "sede_id,sede(nombre_sede)"
+            )\
+            .eq("estado_oferta","ACTIVA")\
+            .execute()
+
+    return res.data
+
+
+
+@router_inscripcion.get("/oferta/sede/{sede_id}")
+def obtener_sede(sede_id:str):
+
+    res = db.table("sede")\
+            .select("nombre_sede")\
+            .eq("sede_id",sede_id)\
+            .execute()
+
+    return res.data[0] if res.data else None
+
+@router_inscripcion.get("/periodos")
+def listar_periodos():
+
+    res = db.table("periodo")\
+            .select("idperiodo,nombreperiodo")\
+            .eq("estado","activo")\
+            .execute()
+
+    return res.data
+
+@router_inscripcion.get("/tipo-documento/{cedula}")
+def tipo_documento(cedula:str):
+
+    res = db.table("registronacional")\
+            .select("tipodocumento")\
+            .eq("identificacion",cedula)\
+            .execute()
+
+    if res.data:
+        return res.data[0]
+    
+    return None
+
+
+@router_inscripcion.get("/config-max-carreras")
+def max_carreras():
+
+    p = db.table("periodo")\
+          .select("idperiodo")\
+          .eq("estado","activo")\
+          .execute()
+
+    idp = p.data[0]["idperiodo"]
+
+    cfg = db.table("configuracion_sistema")\
+            .select("valor")\
+            .eq("tipo_config","MAX_CARRERAS_INSCRIPCION")\
+            .eq("idperiodo",idp)\
+            .eq("estado","ACTIVO")\
+            .execute()
+
+    return {"max": int(cfg.data[0]["valor"])}
+
+
+@router_inscripcion.get("/verificar/{cedula}")
+def verificar_inscripcion(cedula:str):
+
+    res = db.table("inscripciones")\
+            .select("id_inscripcion")\
+            .eq("identificacion", cedula)\
+            .execute()
+
+    return {"ok": bool(res.data)}

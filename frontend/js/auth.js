@@ -109,7 +109,7 @@ async function recuperar(){
  }
 }
 
-// ---------------- VALIDAR ASPIRANTE ----------------
+
 async function validar(){
 
  const cedula = document.getElementById("cedula").value

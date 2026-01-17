@@ -9,33 +9,55 @@
 
 <div class="layout">
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
+ <!-- SIDEBAR -->
+ <aside class="sidebar">
 
-    <h1>SIPU</h1>
-    <hr>
-
-    <p id="cedula"></p>
-    <p id="correo" class="small"></p>
-
-    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+  <div class="avatar">
+   <img src="https://api.dicebear.com/7.x/initials/svg?seed=" 
+   id="avatar">
   </div>
 
-  <!-- MAIN -->
-  <div class="main">
+  <h2>🎓 SIPU</h2>
 
-    <!-- HEADER -->
-    <div class="header">
-      <h2>Sistema de Inscripción y Postulación a las Universidades</h2>
-      <p id="bienvenida"></p>
-    </div>
+  <p id="userName"></p>
 
-    <!-- FASES -->
-    <div id="fases"></div>
+  <button onclick="irExamen()" id="btnExamen" style="display:none">
+   🧠 Rendir Examen
+  </button>
 
+  <button onclick="logout()" class="logout">
+   🚪 Cerrar sesión
+  </button>
+
+  <button onclick="modoOscuro()">🌙 Modo oscuro</button>
+
+ </aside>
+
+ <!-- TOAST -->
+ <div id="toast"></div>
+
+ <!-- MAIN -->
+ <main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+   <h1>Panel del Aspirante</h1>
+   <span id="estadoGlobal"></span>
   </div>
-</div>
 
+  <!-- PROGRESS BAR -->
+  <div class="progress-box">
+   <div id="progressBar"></div>
+  </div>
+
+  <!-- FASES -->
+  <div id="fases"></div>
+
+ </main>
+
+</div> <!-- CIERRA layout -->
+
+<!-- JS -->
 <script src="js/dashboard.js"></script>
 </body>
 </html>

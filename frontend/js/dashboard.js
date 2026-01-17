@@ -1,86 +1,143 @@
-async function cargar(){
-
-const res = await fetch("http://127.0.0.1:8000/dashboard/stats")
-const r = await res.json()
-
-document.getElementById("total").innerText =
-"Inscripciones: "+r.total
-}
-
-cargar()
-
-
 const user = JSON.parse(localStorage.getItem("user"))
 
 if(!user){
  window.location="login.html"
 }
 
-document.getElementById("cedula").innerText =
-"C.I: "+user.cedula
+// ================= PINTAR DATOS USUARIO =================
 
-document.getElementById("correo").innerText =
-user.correo
+document.getElementById("userName")
+.innerText = user.nombres+" "+user.apellidos
 
-document.getElementById("bienvenida").innerText =
-"Bienvenido(a), "+user.nombres+" "+user.apellidos
+document.getElementById("avatar")
+.src += user.nombres
 
 
-// CONSULTAR ESTADO REGISTRO NACIONAL
-async function cargarFases(){
+// ================= CONSULTAS BACKEND =================
+
+async function estadoRegistro(){
 
  const res = await fetch(
  "http://127.0.0.1:8000/dashboard/estado/"+user.cedula)
 
- const r = await res.json()
-
- let color="gray"
- let icon="❓"
-
- if(r.estado==="HABILITADO"){
-  color="#2ecc71"
-  icon="✅"
- }
- if(r.estado==="CONDICIONADO"){
-  color="#f1c40f"
-  icon="⚠️"
- }
- if(r.estado==="NO HABILITADO"){
-  color="#e74c3c"
-  icon="❌"
- }
-
- document.getElementById("fases").innerHTML=`
-
- <div class="card">
-   <b>FASE 1: REGISTRO NACIONAL</b>
-   <p class="status" style="color:${color}">
-     ${r.estado} ${icon}
-   </p>
- </div>
-
- <div class="card">
-   <b>FASE 2: INSCRIPCIÓN Y EVALUACIÓN</b>
-   <p>Complete su inscripción para la sede de examen.</p>
-
-   <button onclick="irInscripcion()">
-    Realizar Inscripción
-   </button>
-
-   <button>
-    Descargar Certificado
-   </button>
- </div>
- `
+ return await res.json()
 }
 
-cargarFases()
+async function estaInscrito(){
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/inscripcion/verificar/"+user.cedula)
+
+ return await res.json()
+}
+
+async function tieneEvaluacion(){
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/evaluacion/verificar/"+user.cedula)
+
+ return await res.json()
+}
+
+
+// ================= UI PRINCIPAL =================
+
+async function cargarFases(){
+
+ const rn = await estadoRegistro()
+ const ins = await estaInscrito()
+ const evalua = await tieneEvaluacion()
+
+ document.getElementById("fases").innerHTML = `
+
+ <div class="card">
+  <h3>Registro Nacional</h3>
+  <p>${rn.estado==="HABILITADO" ? "✅ HABILITADO" : "❌ BLOQUEADO"}</p>
+ </div>
+
+ <div class="card">
+  <h3>Inscripción</h3>
+  <p>${ins.ok ? "✔ Completada" : "⏳ Pendiente"}</p>
+
+  ${!ins.ok ? `
+   <button onclick="irInscripcion()">
+    Ir a inscripción
+   </button>` : ""}
+ </div>
+
+ <div class="card">
+  <h3>Evaluación</h3>
+  <p>${evalua.ok ? "✔ Rendido" : "⏳ Pendiente"}</p>
+
+  ${ins.ok && !evalua.ok ? `
+   <button onclick="irExamen()">
+    Rendir examen
+   </button>` : ""}
+ </div>
+
+ <div class="card">
+  <h3>Resultados</h3>
+
+  ${evalua.ok ? `
+   <button onclick="verPuntaje()">
+    Ver puntaje
+   </button>` : `
+   <button disabled>
+    Bloqueado
+   </button>`}
+ </div>
+ `
+
+ // progreso
+ let progreso = 0
+ if(rn.estado==="HABILITADO") progreso+=33
+ if(ins.ok) progreso+=33
+ if(evalua.ok) progreso+=34
+
+ progressBar.style.width = progreso+"%"
+}
+
+
+
+// ================= TOAST =================
+
+function notify(msg){
+ const toast = document.getElementById("toast")
+
+ toast.innerText = msg
+ toast.style.display="block"
+
+ setTimeout(()=>{
+  toast.style.display="none"
+ },3000)
+}
+
+
+// ================= ACCIONES =================
 
 function irInscripcion(){
- window.location = "inscripcion.html"
+ window.location="inscripcion.html"
+}
+
+function irExamen(){
+ window.location="examen.html"
+}
+
+function verPuntaje(){
+ window.location="puntaje.html"
 }
 
 function logout(){
  localStorage.clear()
  window.location="login.html"
 }
+
+function modoOscuro(){
+ document.body.classList.toggle("dark")
+}
+
+
+// ================= INIT =================
+
+cargarFases()
+notify("Bienvenido al sistema SIPU")
