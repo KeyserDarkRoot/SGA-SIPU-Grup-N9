@@ -5,7 +5,7 @@ from app.api.auth import router_auth
 from app.api.inscripcion import router_inscripcion
 from app.api.dashboard import router_dashboard
 from app.api.admin import router_admin
-from app.api.evaluacion import router_eval
+from app.api.examen import router_examen
 app = FastAPI(title="SIPU API")
 
 app.add_middleware(
@@ -19,4 +19,4 @@ app.include_router(router_auth, prefix="/auth")
 app.include_router(router_inscripcion, prefix="/inscripcion")
 app.include_router(router_dashboard, prefix="/dashboard")
 app.include_router(router_admin,prefix="/admin")
-app.include_router(router_eval, prefix="/evaluacion")
+app.include_router(router_examen, prefix="/examen")
