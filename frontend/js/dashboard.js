@@ -59,11 +59,16 @@ async function cargarFases(){
   <h3>Inscripción</h3>
   <p>${ins.ok ? "✔ Completada" : "⏳ Pendiente"}</p>
 
-  ${!ins.ok ? `
-   <button onclick="irInscripcion()">
-    Ir a inscripción
-   </button>` : ""}
- </div>
+  ${ins.ok ? `
+    <button onclick="descargarCertificadoInscripcion()" class="btn-cert" style="background: #007bff; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
+    📄 Generar Certificado
+  </button>
+  ` : `
+    <button onclick="irInscripcion()">
+      Ir a inscripción
+    </button>
+  `}
+  </div>
 
  <div class="card">
   <h3>Evaluación</h3>
@@ -117,6 +122,30 @@ function notify(msg){
 
 function irInscripcion(){
  window.location="inscripcion.html"
+
+}
+
+async function descargarCertificadoInscripcion() {
+    notify("Conectando con el servicio de certificados...");
+    
+    // IMPORTANTE: Esta URL debe coincidir con la ruta que creaste en FastAPI/Flask
+    try {
+        const res = await fetch(`http://127.0.0.1:8000/certificados/inscripcion/${user.cedula}`);
+        
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Comprobante_Inscripcion.pdf`;
+            a.click();
+            notify("✅ PDF Generado con éxito");
+        } else {
+            notify("❌ El servidor de Python no pudo generar el PDF");
+        }
+    } catch (error) {
+        notify("❌ Error: Verifica que tu backend esté corriendo y tengas internet");
+    }
 }
 
 function irExamen(){
