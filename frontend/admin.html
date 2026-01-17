@@ -19,7 +19,7 @@
     <button onclick="show('periodo')" class="menu-btn"><i class="fas fa-calendar-alt"></i> Períodos</button>
     <button onclick="show('oferta')" class="menu-btn"><i class="fas fa-graduation-cap"></i> Oferta Académica</button>
     <button onclick="show('postulaciones')" class="menu-btn"><i class="fas fa-users"></i> Aspirantes</button>
-    <button onclick="show('asignacion')" class="menu-btn"><i class="fas fa-cogs"></i> Asignación Cupos</button>
+    <button onclick="show('asignacion')" class="menu-btn"><i class="fas fa-cogs"></i> Asignación Examen</button>
     <button onclick="show('reportes')" class="menu-btn"><i class="fas fa-chart-pie"></i> Reportes</button>
     <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
   </div>
@@ -105,15 +105,29 @@
     </div>
 
 <div id="asignacion" class="panel">
-        <h2>Motor de Asignación de Cupos</h2>
+        <h2>Motor de Asignación de Examen</h2>
         
         <div class="card">
             <p>Este proceso ejecutará el algoritmo de selección basado en méritos.</p>
+            <!-- CONFIGURACIÓN FECHA EXÁMENES -->
+            <h3>Configuración de Exámenes</h3>
+
+            <label>Fecha inicio de exámenes:</label>
+            <input type="date" id="fechaInicioExamen">
+
+            <button class="btn-main" 
+            style="margin-top:10px; width:220px;"
+            onclick="guardarFechaExamen()">
+            Guardar fecha
+            </button>
+
+            <hr style="margin:20px 0;">
+
             <div style="background:#e8f8f5; border-left:4px solid #2ecc71; padding:15px; margin:20px 0;">
                 <strong>⚠️ Importante:</strong>
                 <ul style="margin:5px 0 0 20px; font-size:13px; color:#555;">
                     <li>Se procesarán todas las carreras del periodo seleccionado.</li>
-                    <li>Los aspirantes serán ordenados por Puntaje Final.</li>
+                    <li>Los aspirantes serán ordenados para cada laboratorio.</li>
                 </ul>
             </div>
 

@@ -4,6 +4,7 @@ from app.core.periodo import Periodo
 from app.core.oferta_academica import OfertaAcademica
 from app.core.reportes import ReporteAsignadosCSV # <--- Importar la nueva clase
 from app.core.asignacion_masiva import AsignacionMasiva
+from datetime import date
 
 router_admin = APIRouter()
 db = crear_cliente()
@@ -216,3 +217,22 @@ def asignar_examenes(idperiodo:int):
 
     except Exception as e:
         return {"ok":False,"error":str(e)}
+
+# --- 7. CONFIGURACIÓN EXAMEN ---
+@router_admin.post("/config-examen")
+def configurar_examen(data:dict):
+
+    payload = {
+        "periodo_id": data["periodo_id"],
+        "fecha_inicio": data["fecha_inicio"]
+    }
+
+    db.table("config_examen")\
+      .insert(payload)\
+      .execute()
+
+    return {
+      "ok": True,
+      "msg": "Fecha de inicio guardada correctamente"
+    }
+

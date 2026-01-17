@@ -179,22 +179,36 @@ async function cambiarEstado(id, nuevo) {
 
 // 6. ASIGNACIÓN
 async function ejecutarAsignacion(){
-    const periodo = document.getElementById("a_periodo").value;
-    if(!periodo) return alert("Seleccione periodo");
-    if(!confirm("⚠️ ¿Ejecutar?")) return;
-    const div = document.getElementById("reporte_asignacion");
-    div.innerHTML = "Procesando...";
-    const res = await fetch("http://127.0.0.1:8000/admin/asignacion/ejecutar", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ periodo_id: periodo })
-    });
-    const r = await res.json();
-    if(res.ok){
-        let html = `<h3>✅ Listo</h3><table><tr><th>Carrera</th><th>Cupos</th><th>Entraron</th><th>Fuera</th></tr>`;
-        r.detalles.forEach(d => html += `<tr><td>${d.carrera}</td><td>${d.cupos}</td><td>${d.asignados}</td><td>${d.rechazados}</td></tr>`);
-        div.innerHTML = html + "</table>";
-        cargarStatsInicio();
-    } else { div.innerHTML = "Error: " + r.detail; }
+
+ const periodo = document.getElementById("a_periodo").value
+
+ if(!periodo){
+  alert("Seleccione un período")
+  return
+ }
+
+ if(!confirm("¿Seguro que desea ejecutar la asignación masiva?")){
+  return
+ }
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/asignacion/ejecutar",{
+  method:"POST",
+  headers:{ "Content-Type":"application/json"},
+  body:JSON.stringify({
+    periodo_id: periodo
+  })
+ })
+
+ const data = await res.json()
+
+ if(data.ok){
+   alert("Asignación ejecutada correctamente")
+ }else{
+   alert("Error: "+data.msg)
+ }
 }
+
 
 // 7. REPORTES
 async function cargarReportes() {
