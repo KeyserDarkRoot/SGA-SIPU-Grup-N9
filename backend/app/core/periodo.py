@@ -46,20 +46,20 @@ class Periodo:
 
     # Crear un nuevo periodo académico
     def crear_periodo(self):
-        try:
-            data = {
-                "idperiodo": self.id_periodo,
-                "nombreperiodo": self.nombre_periodo,
-                "fechainicio": self.fecha_inicio,
-                "fechafin": self.fecha_fin,
-                "estado": self.estado
-            }
 
-            self.db.insertar(data)
-            print(f"Periodo '{self.nombre_periodo}' creado correctamente.")
+        data = {
+            "nombreperiodo": self.nombre_periodo,
+            "fechainicio": self.fecha_inicio,
+            "fechafin": self.fecha_fin,
+            "estado": "inactivo"
+        }
 
-        except Exception as e:
-            print("Error al crear el periodo:", e)
+        res = self.db.insertar(data)
+
+        if not res.data:
+            raise Exception("No se pudo guardar el periodo")
+
+        return res.data
 
     # Activar un periodo (solo uno puede estar activo)
     def activar_periodo(self):
