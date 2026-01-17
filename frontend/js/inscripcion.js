@@ -140,17 +140,26 @@ function actualizarLista(){
  })
 }
 
-function allowDrop(ev){ev.preventDefault()}
+function allowDrop(ev){
+ ev.preventDefault()
+ ev.target.classList.add("drag-over")
+}
+
 
 let dragIndex=null
 
-function drag(ev,i){dragIndex=i}
+function drag(ev,i){
+ dragIndex=i
+ ev.target.classList.add("dragging") // 👈 efecto visual
+}
 
 function drop(ev,i){
 
- let temp=seleccionadas[dragIndex]
- seleccionadas[dragIndex]=seleccionadas[i]
- seleccionadas[i]=temp
+ ev.target.classList.remove("dragging") // 👈 quitar efecto
+
+ let temp = seleccionadas[dragIndex]
+ seleccionadas[dragIndex] = seleccionadas[i]
+ seleccionadas[i] = temp
 
  actualizarLista()
 }
@@ -303,6 +312,25 @@ function filtrar(){
  renderCards(f)
 }
 
+function allowDrop(ev){
+ ev.preventDefault()
+ ev.target.classList.add("drag-over")
+}
+
+function drag(ev,i){
+ dragIndex=i
+}
+
+function drop(ev,i){
+
+ ev.target.classList.remove("drag-over")
+
+ let temp=seleccionadas[dragIndex]
+ seleccionadas[dragIndex]=seleccionadas[i]
+ seleccionadas[i]=temp
+
+ actualizarLista()
+}
 
 // ===================== INIT =====================
 
