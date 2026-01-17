@@ -1,26 +1,76 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response # <--- OJO: Importar Response
 from app.database.ConexionBD.api_supabase import crear_cliente
 from app.core.periodo import Periodo
 from app.core.oferta_academica import OfertaAcademica
+from app.core.reportes import ReporteAsignadosCSV # <--- Importar la nueva clase
+from app.core.asignacion_masiva import AsignacionMasiva
 
 router_admin = APIRouter()
 db = crear_cliente()
+core_masivo = AsignacionMasiva()
+# --- 1. DASHBOARD INICIO ---
+@router_admin.get("/home_stats")
+def home_stats():
+    try:
+        per = db.table("periodo").select("nombreperiodo").eq("estado", "activo").execute()
+        periodo_actual = per.data[0]['nombreperiodo'] if per.data else "No hay periodo activo"
+        ins = db.table("inscripciones").select("*", count="exact", head=True).execute()
+        total = ins.count
+        return {"periodo": periodo_actual, "aspirantes": total}
+    except Exception as e:
+        print("Error stats:", e)
+        return {"periodo": "Error BD", "aspirantes": 0}
 
-# --- GESTIÓN DE PERIODOS ---
+# --- 2. GESTIÓN DE PERIODOS (ACTUALIZADO) ---
 @router_admin.post("/periodo")
 def crear_periodo(d: dict):
     try:
-        # [POO] Instanciación de la clase Periodo
-        p = Periodo(d.get("id"), d["nombre"], d["inicio"], d["fin"])
-        p.crear_periodo()
-        return {"ok": True, "msg": "Periodo creado"}
+        p = Periodo(
+            id_periodo=None,  # 👈 IMPORTANTE
+            nombre_periodo=d["nombre"],
+            fecha_inicio=d["inicio"],
+            fecha_fin=d["fin"]
+        )
+
+        r = p.crear_periodo()
+        return {"ok": True, "msg": "Periodo creado", "data": r}
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# --- ENDPOINT NUEVO: DATOS AUXILIARES (Para los Combos) ---
+@router_admin.get("/periodos/listar")
+def listar_periodos_gestion():
+    """Retorna todos los periodos para mostrarlos en la tabla de gestión"""
+    try:
+        res = db.table("periodo").select("*").order("idperiodo", desc=True).execute()
+        return res.data
+    except Exception as e:
+        return []
+
+@router_admin.put("/periodo/estado")
+def cambiar_estado_periodo(d: dict):
+    """
+    Lógica de Negocio:
+    Si activamos un periodo, debemos DESACTIVAR todos los demás primero.
+    Solo puede haber un periodo activo a la vez.
+    """
+    try:
+        nuevo_estado = d["nuevo_estado"] # 'activo' o 'cerrado'
+        id_periodo = d["idperiodo"]
+
+        # Si vamos a activar uno, primero apagamos todo
+        if nuevo_estado == "activo":
+            db.table("periodo").update({"estado": "cerrado"}).neq("idperiodo", 0).execute()
+
+        # Actualizamos el objetivo
+        db.table("periodo").update({"estado": nuevo_estado}).eq("idperiodo", id_periodo).execute()
+        
+        return {"ok": True, "msg": f"Periodo {nuevo_estado} correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router_admin.get("/datos_auxiliares")
 def datos_auxiliares():
-    """Devuelve las Sedes y Periodos para llenar las listas desplegables"""
     try:
         sedes = db.table("sede").select("sede_id, nombre_sede").execute().data
         periodos = db.table("periodo").select("idperiodo, nombreperiodo").execute().data
@@ -28,47 +78,141 @@ def datos_auxiliares():
     except Exception as e:
         return {"sedes": [], "periodos": []}
 
-# --- ENDPOINT NUEVO: CREAR OFERTA COMPLETA (10 CAMPOS) ---
+# --- 3. OFERTA ACADÉMICA ---
 @router_admin.post("/oferta")
 def crear_oferta(d: dict):
     try:
-        # Validación de campos obligatorios
-        campos_req = ["ofa_id", "nombre_carrera", "periodo_id", "cupos_disponibles", 
-                      "sede_id", "estado_oferta", "fecha_publicacion", 
-                      "BloqueConocimiento", "modalidad", "jornada"]
-        
+        res_id = db.table("oferta_academica").select("ofa_id").order("ofa_id", desc=True).limit(1).execute()
+        next_id = (res_id.data[0]["ofa_id"] + 1) if res_id.data else 1
+        campos_req = ["nombre_carrera", "periodo_id", "cupos_disponibles", "sede_id", "estado_oferta", "fecha_publicacion", "BloqueConocimiento", "modalidad", "jornada"]
         faltantes = [c for c in campos_req if c not in d]
-        if faltantes:
-            raise HTTPException(status_code=400, detail=f"Faltan datos: {', '.join(faltantes)}")
+        if faltantes: raise HTTPException(status_code=400, detail=f"Faltan datos: {', '.join(faltantes)}")
 
-        # [POO] Creación del Objeto OfertaAcademica con los 10 atributos
         o = OfertaAcademica(
-            ofa_id=int(d["ofa_id"]),
-            nombre_carrera=d["nombre_carrera"],
-            periodo_id=int(d["periodo_id"]),
-            cupos_disponibles=int(d["cupos_disponibles"]),
-            sede_id=d["sede_id"],
-            estado_oferta=d["estado_oferta"],
-            fecha_publicacion=d["fecha_publicacion"],
-            BloqueConocimiento=d["BloqueConocimiento"],
-            modalidad=d["modalidad"],
-            jornada=int(d["jornada"])
+            ofa_id=next_id, nombre_carrera=d["nombre_carrera"], periodo_id=int(d["periodo_id"]),
+            cupos_disponibles=int(d["cupos_disponibles"]), sede_id=d["sede_id"],
+            estado_oferta=d["estado_oferta"], fecha_publicacion=d["fecha_publicacion"],
+            BloqueConocimiento=d["BloqueConocimiento"], modalidad=d["modalidad"], jornada=int(d["jornada"])
         )
-        
-        # [POO] Llamada al método del objeto
         o.crear_oferta()
-
-        return {"ok": True, "msg": "Oferta creada correctamente"}
+        return {"ok": True, "msg": f"Oferta creada con ID {next_id}"}
     except Exception as e:
         print("Error API Oferta:", e)
         raise HTTPException(status_code=400, detail=str(e))
 
-# --- OTROS ENDPOINTS ---
-@router_admin.post("/universidad")
-def crear_universidad(d: dict):
-    db.table("universidad").insert({"nombre":d["nombre"], "direccion":d["direccion"]}).execute()
-    return {"ok": True}
+# --- 4. ASPIRANTES ---
+@router_admin.get("/aspirante/buscar/{criterio}")
+def buscar_aspirante(criterio: str):
+    try:
+        res = db.table("inscripciones").select("*").ilike("identificacion", f"%{criterio}%").execute()
+        return res.data
+    except Exception as e:
+        return []
+
+@router_admin.put("/aspirante/estado")
+def cambiar_estado_aspirante(d: dict):
+    try:
+        db.table("inscripciones").update({"estado_inscripcion": d["nuevo_estado"]}).eq("id_inscripcion", d["id_inscripcion"]).execute()
+        return {"ok": True, "msg": "Estado actualizado"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router_admin.put("/aspirante/nota")
+def actualizar_nota(d: dict):
+    try:
+        db.table("inscripciones").update({"puntaje_final": int(d["nota"])}).eq("id_inscripcion", d["id_inscripcion"]).execute()
+        return {"ok": True, "msg": "Nota actualizada"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router_admin.get("/postulaciones")
 def postulaciones():
     return db.table("inscripciones").select("*").execute().data
+
+# --- 5. ASIGNACIÓN ---
+@router_admin.post("/asignacion/ejecutar")
+def ejecutar_asignacion(d: dict):
+    periodo_id = d.get("periodo_id")
+    if not periodo_id: raise HTTPException(status_code=400, detail="Falta periodo")
+    log_resultados = []
+    try:
+        ofertas = db.table("oferta_academica").select("*").eq("periodo_id", periodo_id).execute().data
+        for oferta in ofertas:
+            carrera = oferta["nombre_carrera"]
+            cupos = oferta["cupos_disponibles"]
+            aspirantes = db.table("inscripciones").select("*").eq("carrera_seleccionada", carrera).eq("estado_inscripcion", "REGISTRADO").execute().data
+            aspirantes_ordenados = sorted(aspirantes, key=lambda x: x.get("puntaje_final", 0), reverse=True)
+            asignados = aspirantes_ordenados[:cupos]
+            rechazados = aspirantes_ordenados[cupos:]
+
+            for a in asignados: db.table("inscripciones").update({"estado_inscripcion": "ASIGNADO"}).eq("id_inscripcion", a["id_inscripcion"]).execute()
+            for r in rechazados: db.table("inscripciones").update({"estado_inscripcion": "RECHAZADO"}).eq("id_inscripcion", r["id_inscripcion"]).execute()
+
+            log_resultados.append({"carrera": carrera, "cupos": cupos, "postulantes": len(aspirantes), "asignados": len(asignados), "rechazados": len(rechazados)})
+        return {"ok": True, "msg": "Proceso completado", "detalles": log_resultados}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 6. REPORTES ---
+@router_admin.get("/reportes/stats")
+def obtener_reportes():
+    try:
+        data = db.table("inscripciones").select("carrera_seleccionada, estado_inscripcion").execute().data
+        conteo_carreras = {}
+        for d in data:
+            c = d.get("carrera_seleccionada", "Desconocida")
+            conteo_carreras[c] = conteo_carreras.get(c, 0) + 1
+        conteo_estados = {"ASIGNADO": 0, "RECHAZADO": 0, "REGISTRADO": 0, "INVALIDADO": 0}
+        for d in data:
+            e = d.get("estado_inscripcion", "REGISTRADO")
+            conteo_estados[e] = conteo_estados.get(e, 0) + 1
+        return {"carreras": {"labels": list(conteo_carreras.keys()), "values": list(conteo_carreras.values())}, "estados": {"labels": list(conteo_estados.keys()), "values": list(conteo_estados.values())}}
+    except Exception as e:
+        return {"carreras": {"labels":[], "values":[]}, "estados": {"labels":[], "values":[]}}
+    
+@router_admin.get("/asignacion/exportar/{periodo_id}")
+def exportar_asignados(periodo_id: int):
+    """
+    Genera un archivo CSV con la lista de estudiantes ASIGNADOS en el periodo.
+    Usa Polimorfismo (ReporteAsignadosCSV).
+    """
+    try:
+        # 1. Obtener carreras del periodo
+        ofertas = db.table("oferta_academica").select("nombre_carrera").eq("periodo_id", periodo_id).execute().data
+        carreras = [o["nombre_carrera"] for o in ofertas]
+        
+        if not carreras:
+            raise HTTPException(status_code=404, detail="No hay carreras en este periodo")
+
+        # 2. Obtener estudiantes ASIGNADOS de esas carreras
+        # Nota: Supabase 'in' usa paréntesis: .in_("columna", [lista])
+        asignados = db.table("inscripciones")\
+            .select("*")\
+            .in_("carrera_seleccionada", carreras)\
+            .eq("estado_inscripcion", "ASIGNADO")\
+            .execute().data
+
+        # 3. Usar Polimorfismo para generar el reporte
+        reporteador = ReporteAsignadosCSV()
+        csv_content = reporteador.generar(asignados)
+
+        # 4. Retornar como archivo descargable
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=Listado_Asignados_P{periodo_id}.csv"}
+        )
+
+    except Exception as e:
+        print("Error exportando:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router_admin.post("/asignar-examenes/{idperiodo}")
+def asignar_examenes(idperiodo:int):
+
+    try:
+        r = core_masivo.ejecutar(idperiodo)
+        return {"ok":True,"data":r}
+
+    except Exception as e:
+        return {"ok":False,"error":str(e)}
