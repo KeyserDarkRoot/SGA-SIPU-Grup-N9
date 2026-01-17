@@ -1,55 +1,74 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.database.ConexionBD.api_supabase import crear_cliente
 from app.core.periodo import Periodo
 from app.core.oferta_academica import OfertaAcademica
 
-router_admin=APIRouter()
-db=crear_cliente()
+router_admin = APIRouter()
+db = crear_cliente()
 
+# --- GESTIÓN DE PERIODOS ---
 @router_admin.post("/periodo")
-def crear_periodo(d:dict):
+def crear_periodo(d: dict):
+    try:
+        # [POO] Instanciación de la clase Periodo
+        p = Periodo(d.get("id"), d["nombre"], d["inicio"], d["fin"])
+        p.crear_periodo()
+        return {"ok": True, "msg": "Periodo creado"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
- p=Periodo(d["nombre"],d["inicio"],d["fin"])
- db.table("periodo").insert({
-  "nombre":p.nombre,
-  "fecha_inicio":p.fecha_inicio,
-  "fecha_fin":p.fecha_fin
- }).execute()
+# --- ENDPOINT NUEVO: DATOS AUXILIARES (Para los Combos) ---
+@router_admin.get("/datos_auxiliares")
+def datos_auxiliares():
+    """Devuelve las Sedes y Periodos para llenar las listas desplegables"""
+    try:
+        sedes = db.table("sede").select("sede_id, nombre_sede").execute().data
+        periodos = db.table("periodo").select("idperiodo, nombreperiodo").execute().data
+        return {"sedes": sedes, "periodos": periodos}
+    except Exception as e:
+        return {"sedes": [], "periodos": []}
 
- return {"ok":True}
-
+# --- ENDPOINT NUEVO: CREAR OFERTA COMPLETA (10 CAMPOS) ---
 @router_admin.post("/oferta")
-def crear_oferta(d:dict):
+def crear_oferta(d: dict):
+    try:
+        # Validación de campos obligatorios
+        campos_req = ["ofa_id", "nombre_carrera", "periodo_id", "cupos_disponibles", 
+                      "sede_id", "estado_oferta", "fecha_publicacion", 
+                      "BloqueConocimiento", "modalidad", "jornada"]
+        
+        faltantes = [c for c in campos_req if c not in d]
+        if faltantes:
+            raise HTTPException(status_code=400, detail=f"Faltan datos: {', '.join(faltantes)}")
 
- o=OfertaAcademica(
-  d["bloque"],
-  d["carrera"],
-  int(d["cupos"])
- )
+        # [POO] Creación del Objeto OfertaAcademica con los 10 atributos
+        o = OfertaAcademica(
+            ofa_id=int(d["ofa_id"]),
+            nombre_carrera=d["nombre_carrera"],
+            periodo_id=int(d["periodo_id"]),
+            cupos_disponibles=int(d["cupos_disponibles"]),
+            sede_id=d["sede_id"],
+            estado_oferta=d["estado_oferta"],
+            fecha_publicacion=d["fecha_publicacion"],
+            BloqueConocimiento=d["BloqueConocimiento"],
+            modalidad=d["modalidad"],
+            jornada=int(d["jornada"])
+        )
+        
+        # [POO] Llamada al método del objeto
+        o.crear_oferta()
 
- db.table("oferta_academica").insert({
-  "BloqueConocimiento":o.bloque,
-  "nombre_carrera":o.carrera,
-  "cupos_disponibles":o.cupos
- }).execute()
+        return {"ok": True, "msg": "Oferta creada correctamente"}
+    except Exception as e:
+        print("Error API Oferta:", e)
+        raise HTTPException(status_code=400, detail=str(e))
 
- return {"ok":True}
-
+# --- OTROS ENDPOINTS ---
 @router_admin.post("/universidad")
-def crear_universidad(d:dict):
-
- db.table("universidad").insert({
-  "nombre":d["nombre"],
-  "direccion":d["direccion"]
- }).execute()
-
- return {"ok":True}
+def crear_universidad(d: dict):
+    db.table("universidad").insert({"nombre":d["nombre"], "direccion":d["direccion"]}).execute()
+    return {"ok": True}
 
 @router_admin.get("/postulaciones")
 def postulaciones():
- return db.table("inscripciones").select("*").execute().data
-
-
-def verificar_admin(user):
-    if user.get("rol") != "Admin":
-        raise Exception("Acceso denegado")
+    return db.table("inscripciones").select("*").execute().data
