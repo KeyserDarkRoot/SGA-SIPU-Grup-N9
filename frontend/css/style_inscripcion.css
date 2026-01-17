@@ -1,0 +1,172 @@
+body{
+ background:#f0f2f5;
+ font-family:Arial;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.wizard{
+ width:900px;
+ margin:30px auto;
+ background:white;
+ border-radius:12px;
+ box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+/* PASOS */
+.steps{
+ display:flex;
+ background:#f8f9fa;
+ padding:15px;
+}
+
+.steps span{
+ flex:1;
+ text-align:center;
+ font-weight:bold;
+ color:#bdc3c7;
+}
+
+.steps .active{
+ color:#3498db;
+ background:white;
+ padding:10px;
+ border-radius:8px;
+}
+
+/* CAJA CONTENIDO */
+.box{
+ background:#fff;
+ padding:30px;
+ border-radius:12px;
+}
+
+/* TITULOS */
+h3{
+ margin-bottom:10px;
+ color:#1e293b;
+}
+
+/* PANEL CONTADOR */
+.panel{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:10px;
+}
+
+/* BADGE */
+.badge{
+ background:#22c55e;
+ color:white;
+ padding:4px 10px;
+ border-radius:20px;
+ font-size:12px;
+}
+
+/* BUSCADOR */
+.search-box{
+ margin-bottom:10px;
+}
+
+.search-box input{
+ width:100%;
+ padding:8px;
+ border-radius:8px;
+ border:1px solid #cbd5e1;
+}
+
+/* TARJETAS CARRERAS */
+.card{
+ background:white;
+ border-radius:16px;
+ padding:20px;
+ box-shadow:0 4px 12px rgba(0,0,0,.08);
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:10px;
+}
+
+/* TAG BLOQUE */
+.tag{
+ background:#0ea5e9;
+ color:white;
+ padding:4px 8px;
+ border-radius:20px;
+ font-size:12px;
+}
+
+/* BOTONES */
+.btn{
+ background:#2563eb;
+ color:white;
+ border:none;
+ padding:8px 14px;
+ border-radius:6px;
+ cursor:pointer;
+}
+
+.btn:hover{
+ background:#1e40af;
+}
+
+.btn-danger{
+ background:#dc2626;
+}
+
+.btn-danger:hover{
+ background:#991b1b;
+}
+
+/* LISTA SELECCIONADAS */
+ul li{
+ margin:8px 0;
+ list-style:none;
+}
+
+/* BOTONES GENERALES */
+button{
+ background:#2563eb;
+ border:none;
+ padding:8px 14px;
+ border-radius:8px;
+ color:white;
+ cursor:pointer;
+}
+
+button:hover{
+ background:#1d4ed8;
+}
+
+/* ITEM DRAG */
+.drag{
+ background:#f8fafc;
+ padding:10px;
+ border-radius:10px;
+ margin:6px 0;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ transition:.25s;
+}
+
+/* cuando arrastras */
+.drag:active{
+ opacity:.4;
+ transform:scale(.98);
+}
+
+/* hover */
+.drag:hover{
+ background:#e2e8f0;
+}
+
+/* zona destino */
+.drag-over{
+ border:2px dashed #2563eb;
+ background:#dbeafe;
+}
+
+.dragging{
+ opacity:.3;
+}

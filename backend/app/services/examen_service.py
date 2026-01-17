@@ -139,5 +139,26 @@ class ExamenService(BaseService):
 
         return res.count
 
+    # Verificar si ya tiene asignación
+    def ya_tiene_asignacion(self, cedula):
 
+        res = self._db.table("asignacion_examen")\
+            .select("asignacion_id")\
+            .eq("identificacion_aspirante", cedula)\
+            .limit(1)\
+            .execute()
 
+        return True if res.data else False
+
+    def fecha_config(self, periodo_id):
+
+        res = self.db.table("config_examen")\
+                .select("fecha_inicio")\
+                .eq("periodo_id", periodo_id)\
+                .eq("estado","ACTIVO")\
+                .execute()
+
+        if not res.data:
+            raise Exception("No existe configuración de examen para este período")
+
+        return res.data[0]["fecha_inicio"]
