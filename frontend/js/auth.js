@@ -108,3 +108,31 @@ async function recuperar(){
   alert(r.msg)
  }
 }
+
+
+async function validar(){
+
+ const cedula = document.getElementById("cedula").value
+ const fecha  = document.getElementById("fecha").value
+
+ if(!cedula || !fecha){
+  alert("Complete todos los campos")
+  return
+ }
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/auth/validar",{
+  method:"POST",
+  headers:{ "Content-Type":"application/json"},
+  body: JSON.stringify({ cedula, fecha })
+ })
+
+ const r = await res.json()
+
+ if(r.ok){
+  alert("Credenciales enviadas al correo")
+  window.location="login.html"
+ }else{
+  alert(r.msg)
+ }
+}
