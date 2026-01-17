@@ -23,28 +23,47 @@ function activar(n){
 // ===================== PASO 1 =====================
 
 function cargarPaso1(){
+    activar(1);
 
- activar(1)
+    fetch("http://127.0.0.1:8000/inscripcion/datos/" + user.cedula)
+    .then(r => r.json())
+    .then(d => {
+        // 1. Definimos exactamente qué campos queremos mostrar
+        const camposPermitidos = [
+            'tipodocumento', 
+            'identificacion', 
+            'nombres', 
+            'apellidos', 
+            'nacionalidad', 
+            'fechanacimiento', 
+            'estadocivil', 
+            'sexo', 
+            'genero', 
+            'autoidentificacion'
+        ];
 
- fetch("http://127.0.0.1:8000/inscripcion/datos/"+user.cedula)
- .then(r=>r.json())
- .then(d=>{
+        // 2. Filtramos los datos que vienen del servidor
+        const contenidoHTML = camposPermitidos.map(campo => {
+            // Verificamos si el dato existe para evitar errores
+            const valor = d[campo] !== undefined ? d[campo] : "No disponible";
+            // Formateamos el nombre del campo para que se vea bien (ej: tipodocumento -> Tipo documento)
+            const etiqueta = campo.charAt(0).toUpperCase() + campo.slice(1);
+            
+            return `<p><b>${etiqueta}</b>: ${valor}</p>`;
+        }).join("");
 
- document.getElementById("contenido").innerHTML=`
-
- <div class="box">
- <h3>Datos del Registro Nacional</h3>
-
- ${Object.entries(d).map(e=>
- `<p><b>${e[0]}</b>: ${e[1]}</p>`
- ).join("")}
-
- <button onclick="cargarPaso2()">Siguiente</button>
- </div>
- `
- })
+        // 3. Renderizamos en el HTML
+        document.getElementById("contenido").innerHTML = `
+            <div class="box">
+                <h3>Datos del Registro Nacional</h3>
+                <div class="datos-personales">
+                    ${contenidoHTML}
+                </div>
+                <button class="btn" onclick="cargarPaso2()">Siguiente</button>
+            </div>
+        `;
+    });
 }
-
 // ===================== PASO 2 =====================
 
 function cargarPaso2(){
