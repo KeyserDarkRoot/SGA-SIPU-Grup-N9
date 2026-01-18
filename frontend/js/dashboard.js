@@ -91,38 +91,11 @@ async function cargarEstadoGeneral() {
     }
 }
 
-// Navegación Ofertas
-async function irAInscripcion() {
-    show('panel_ofertas');
-    // Activar panel ofertas manualmente y desactivar inicio
-    document.getElementById("inicio").classList.remove("active");
-    document.getElementById("panel_ofertas").classList.add("active");
-
-    const div = document.getElementById("gridOfertas");
-    div.innerHTML = "Cargando ofertas...";
-
-    try {
-        const res = await fetch("http://127.0.0.1:8000/dashboard/ofertas-disponibles");
-        const ofertas = await res.json();
-
-        if(ofertas.length === 0) {
-            div.innerHTML = "<p>No hay ofertas disponibles.</p>";
-            return;
-        }
-
-        div.innerHTML = ofertas.map(o => `
-            <div class="oferta-item">
-                <span style="background:#e0f2f1; color:#00695c; padding:2px 8px; border-radius:4px; font-size:12px;">${o.BloqueConocimiento || 'General'}</span>
-                <h3 style="margin:10px 0; color:#2c3e50;">${o.nombre_carrera}</h3>
-                <p style="font-size:13px; color:#7f8c8d;">${o.modalidad} | ${o.jornada===1?'Matutina':'Vespertina'}</p>
-                <button onclick="confirmarInscripcion('${o.nombre_carrera}', ${o.ofa_id})" class="btn-action btn-blue">
-                    Seleccionar
-                </button>
-            </div>
-        `).join("");
-    } catch (e) { div.innerHTML = "Error cargando ofertas"; }
+// Navegación a la página de Inscripción
+function irAInscripcion() {
+    // Redirige al usuario a la página HTML de inscripción
+    window.location.href = "inscripcion.html";
 }
-
 async function confirmarInscripcion(carrera, idOferta) {
     if(!confirm(`¿Deseas inscribirte en ${carrera}?`)) return;
 
