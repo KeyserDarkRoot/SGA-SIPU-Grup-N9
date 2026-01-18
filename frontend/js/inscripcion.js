@@ -23,29 +23,69 @@ function activar(n){
 
 // ===================== PASO 1 =====================
 
-function cargarPaso1(){
+function cargarPaso1() {
     activar(1);
 
     fetch("http://127.0.0.1:8000/inscripcion/datos/" + user.cedula)
     .then(r => r.json())
     .then(d => {
-        const camposPermitidos = [
-            'tipodocumento', 'identificacion', 'nombres', 'apellidos', 
-            'nacionalidad', 'fechanacimiento', 'estadocivil', 'sexo', 
-            'genero', 'autoidentificacion'
+        // Mapeo manual para controlar el orden y las etiquetas exactas de la imagen
+        const camposVisuales = [
+            { id: 'identificacion', label: 'CÉDULA' },
+            { id: 'nombres', label: 'NOMBRES' },
+            { id: 'apellidos', label: 'APELLIDOS' },
+            { id: 'nacionalidad', label: 'NACIONALIDAD' },
+            { id: 'fechanacimiento', label: 'FECHA NAC.' },
+            { id: 'genero', label: 'GÉNERO' },
+            // Puedes añadir aquí 'correo', 'nota', etc., si tu API los devuelve
         ];
 
-        const contenidoHTML = camposPermitidos.map(campo => {
-            const valor = d[campo] !== undefined ? d[campo] : "No disponible";
-            const etiqueta = campo.charAt(0).toUpperCase() + campo.slice(1);
-            return `<p><b>${etiqueta}</b>: ${valor}</p>`;
+        // Si quieres incluir todos tus datos originales pero con este formato:
+        const todosMisCampos = [
+            { id: 'tipodocumento', label: 'TIPO DOCUMENTO' },
+            { id: 'identificacion', label: 'IDENTIFICACIÓN' },
+            { id: 'nombres', label: 'NOMBRES' },
+            { id: 'apellidos', label: 'APELLIDOS' },
+            { id: 'nacionalidad', label: 'NACIONALIDAD' },
+            { id: 'fechanacimiento', label: 'FECHA NACIMIENTO' },
+            { id: 'estadocivil', label: 'ESTADO CIVIL' },
+            { id: 'sexo', label: 'SEXO' },
+            { id: 'genero', label: 'GÉNERO' },
+            { id: 'autoidentificacion', label: 'AUTOIDENTIFICACIÓN' }
+        ];
+
+        const contenidoHTML = todosMisCampos.map(campo => {
+            const valor = d[campo.id] !== undefined ? d[campo.id] : "No disponible";
+            return `
+                <div class="fila-dato">
+                    <span class="dato-etiqueta">${campo.label}</span>
+                    <span class="dato-valor">${valor}</span>
+                </div>
+            `;
         }).join("");
 
         document.getElementById("contenido").innerHTML = `
             <div class="box">
-                <h3>Datos del Registro Nacional</h3>
-                <div class="datos-personales">${contenidoHTML}</div>
-                <button class="btn" onclick="cargarPaso2()">Siguiente</button>
+                <h3 style="border-bottom: 2px solid #3b82f6; display: inline-block; padding-bottom: 5px;">
+                    Datos del Registro Nacional
+                </h3>
+                
+                <div class="tabla-datos">
+                    ${contenidoHTML}
+                </div>
+
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 15px;">
+                    * Verifique que sus datos sean correctos.
+                </p>
+
+                <div class="footer-paso1">
+                    <button class="btn-salir" onclick="window.location='dashboard.html'">
+                        Cancelar / Salir
+                    </button>
+                    <button class="btn-siguiente-blue" onclick="cargarPaso2()">
+                        Siguiente
+                    </button>
+                </div>
             </div>
         `;
     });

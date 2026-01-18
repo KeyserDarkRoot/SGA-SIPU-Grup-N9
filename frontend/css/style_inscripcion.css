@@ -445,3 +445,62 @@ button:hover{
     font-size: 16px; /* Evita zoom automático en móviles */
     box-sizing: border-box; /* Importante para que no se salga del contenedor */
 }
+
+/* Estilos para la tabla de datos profesionales */
+.tabla-datos {
+    width: 100%;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 20px;
+}
+
+.fila-dato {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0; /* Línea divisoria como en la imagen */
+}
+
+.dato-etiqueta {
+    font-weight: bold;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.dato-valor {
+    color: #1e293b;
+    font-size: 0.95rem;
+    text-align: right;
+}
+
+/* Botones inferiores del Paso 1 */
+.footer-paso1 {
+    display: flex;
+    justify-content: space-between; /* Uno a la izquierda, otro a la derecha */
+    margin-top: 30px;
+}
+
+.btn-salir {
+    background-color: #ef4444; /* Rojo de la imagen */
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-salir:hover {
+    background-color: #dc2626;
+}
+
+.btn-siguiente-blue {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 35px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
