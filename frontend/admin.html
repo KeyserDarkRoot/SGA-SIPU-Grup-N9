@@ -133,9 +133,9 @@
 
             <label>Seleccione el Periodo:</label>
             <div style="display:flex; gap:10px; margin-top:5px; align-items: flex-end;">
-                <select id="a_periodo" style="margin:0;"><option>Cargando...</option></select>
-                
-                <button class="btn-main" style="margin:0; width:180px;" onclick="ejecutarAsignacion()">
+                <select id="a_periodo" style="margin:0;" onchange="validarPeriodo()"><option>Cargando...</option></select>
+
+                <button class="btn-main" id="btnAsignar" style="margin:0; width:180px;" onclick="ejecutarAsignacion()">
                     <i class="fas fa-play"></i> Ejecutar
                 </button>
                 

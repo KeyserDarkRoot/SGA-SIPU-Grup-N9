@@ -192,7 +192,7 @@ async function ejecutarAsignacion(){
  }
 
  const res = await fetch(
- "http://127.0.0.1:8000/asignacion/ejecutar",{
+ "http://127.0.0.1:8000/admin/asignacion/ejecutar",{
   method:"POST",
   headers:{ "Content-Type":"application/json"},
   body:JSON.stringify({
@@ -240,3 +240,74 @@ async function asignarMasivo(){
 
  alert(r.data.msg+" → "+r.data.total)
 }
+
+
+// Guardar Fecha de Examen
+async function guardarFechaExamen(){
+
+ const fecha = document.getElementById("fechaInicioExamen").value
+ const periodo = document.getElementById("a_periodo").value
+
+ if(!fecha || !periodo){
+  alert("Seleccione fecha y período")
+  return
+ }
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/admin/config-examen",
+ {
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify({
+    periodo_id: periodo,
+    fecha_inicio: fecha
+  })
+ })
+
+ const data = await res.json()
+
+ if(data.ok){
+  alert("Fecha guardada correctamente")
+ }else{
+  alert("Error al guardar")
+ }
+}
+
+// Validar estado del período antes de asignar exámenes
+async function validarPeriodo(){
+
+ const periodo = document.getElementById("a_periodo").value
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/admin/periodos/listar"
+ )
+
+ const data = await res.json()
+
+ const per = data.find(p => p.idperiodo == periodo)
+
+ const btn = document.getElementById("btnAsignar")
+
+ if(per.estado === "cerrado"){
+   btn.disabled = false
+   btn.innerText = "Ejecutar asignación"
+ }else{
+   btn.disabled = true
+   btn.innerText = "Periodo activo (bloqueado)"
+ }
+}
+    
+// Bloquear botón si ya se realizó asignación
+async function bloquearSiYaAsignado(){
+
+ const periodo = document.getElementById("a_periodo").value
+
+ const res = await fetch(
+ "http://127.0.0.1:8000/admin/asignacion/existe/"+periodo
+ )
+
+ const data = await res.json()
+
+ document.getElementById("btnAsignar").disabled = data.existe
+}
+

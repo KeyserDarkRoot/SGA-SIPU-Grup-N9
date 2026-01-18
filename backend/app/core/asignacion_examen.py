@@ -1,123 +1,101 @@
-from datetime import date
+from datetime import timedelta, datetime
 from app.core.base_core import BaseCore
 from app.services.examen_service import ExamenService
-from datetime import timedelta
 import math
+
+# ================= ASIGNACIÓN INDIVIDUAL =================
 
 class AsignacionExamen(BaseCore):
 
     def __init__(self):
+        super().__init__()
         self._service = ExamenService()
+        self.gen = GeneradorFechas()
+
 
     def ejecutar(self, cedula):
-        return self._asignar_examen(cedula)
+        return self._asignar(cedula)
 
-    # ================= PRIVADOS =================
+    def _asignar(self, cedula):
 
-    def _asignar_examen(self, cedula):
-
-        # PROTECCIÓN
         if self._service.ya_tiene_asignacion(cedula):
-            raise Exception(
-            "Este aspirante ya tiene examen asignado"
-            )
+            raise Exception("Ya tiene examen asignado")
 
-        # 1 Obtener sede del aspirante
         sede = self._service.obtener_sede_aspirante(cedula)
-
         if not sede:
             raise Exception("Aspirante no inscrito")
 
-        # 2 Obtener carrera prioridad
         carrera = self._service.obtener_carrera_prioridad(cedula)
-
         if not carrera:
-            raise Exception("No tiene carreras")
+            raise Exception("No tiene carrera")
 
-        # 3 Obtener tipo examen
-        tipo = self._service.obtener_tipo_examen(
-            carrera["ofa_id"]
-        )
-
+        tipo = self._service.obtener_tipo_examen(carrera["ofa_id"])
         if not tipo:
             raise Exception("Tipo examen no encontrado")
 
-        # 4️ Laboratorios de su sede
         labs = self._service.obtener_laboratorios_sede(sede)
-
-        if not labs:
-            raise Exception("No hay laboratorios en su sede")
-
-        # 5️ Horarios activos
         horarios = self._service.obtener_horarios()
 
-        if not horarios:
-            raise Exception("No hay horarios configurados")
+        fecha = self._service.fecha_config(1)
 
-        # 6️ DISTRIBUCIÓN INTELIGENTE
-        for lab in labs:
+        for f in self.gen.generar(fecha, 30):
 
             for h in horarios:
 
-                usados = self._service.contar_asignados(
-                    lab["lab_id"],
-                    h["id_horario"]
-                )
+                for l in labs:
 
-                if usados < lab["capacidad_equipos"]:
+                    usados = self._service.contar_asignados(
+                        l["lab_id"], h["id_horario"], f
+                    )
 
-                    data = {
-                        "identificacion_aspirante": cedula,
-                        "tipo_examen_id": tipo["id_tipo"],
-                        "laboratorio_id": lab["lab_id"],
-                        "horario_id": h["id_horario"],
-                        "fecha_examen": date.today().isoformat()
-                    }
+                    if usados < l["capacidad_equipos"]:
 
-                    self._service.guardar_asignacion(data)
-                    return data
+                        data = {
+                            "identificacion_aspirante": cedula,
+                            "tipo_examen_id": tipo["id_tipo"],
+                            "laboratorio_id": l["lab_id"],
+                            "horario_id": h["id_horario"],
+                            "fecha_examen": f
+                        }
+                        print("DATA:", data)
 
-        # 7️ Si todo lleno
-        raise Exception(
-         "No existen cupos disponibles"
-        )
+                        self._service.guardar_asignacion(data)
+                        return data
+
+        raise Exception("No existen cupos disponibles")
+
 
 class GeneradorFechas:
-
-    def generar(self, fecha_inicio, dias):
+    def generar(self, inicio, dias):
         fechas=[]
-        f = fecha_inicio
-
+        f=inicio
         for _ in range(dias):
             fechas.append(f)
             f += timedelta(days=1)
-
         return fechas
 
 
 class CalculadorCapacidad:
 
-    def calcular_diaria(self, labs, horarios):
+    def diaria(self, labs, horarios):
         total=0
-        for lab in labs:
-            total += lab["capacidad_equipos"]
-
+        for l in labs:
+            total += l["capacidad_equipos"]
         return total * len(horarios)
-
 
 
 class CalculadorDias:
 
-    def calcular(self, total_asp, capacidad_diaria):
-        return math.ceil(
-         total_asp / capacidad_diaria
-        )
+    def calcular(self, aspirantes, capacidad):
+        return math.ceil(aspirantes / capacidad)
 
+
+# ================= ASIGNACIÓN MASIVA =================
 
 class AsignacionMasiva:
 
-    def __init__(self, service):
-        self.srv = service
+    def __init__(self):
+        self.srv = ExamenService()
         self.gen = GeneradorFechas()
         self.cap = CalculadorCapacidad()
         self.dias = CalculadorDias()
@@ -125,36 +103,74 @@ class AsignacionMasiva:
     def ejecutar(self, periodo):
 
         aspirantes = self.srv.listar_aspirantes(periodo)
+        fecha_str = self.srv.fecha_config(periodo)
+        fecha_inicio = datetime.strptime(fecha_str, "%Y-%m-%d").date()
 
-        labs = self.srv.labs_periodo(periodo)
-        horarios = self.srv.horarios()
+        for sede in self.srv.listar_sedes(periodo):
 
-        capacidad = self.cap.calcular_diaria(
-            labs, horarios)
+            asp_sede = [
+                a for a in aspirantes
+                if a["sede_id"] == sede["sede_id"]
+            ]
 
-        dias = self.dias.calcular(
-            len(aspirantes), capacidad)
+            if not asp_sede:
+                continue
 
-        fecha_inicio = self.srv.fecha_config(periodo)
+            labs = self.srv.obtener_laboratorios_sede(
+                sede["sede_id"]
+            )
 
-        fechas = self.gen.generar(
-            fecha_inicio, dias)
+            horarios = self.srv.obtener_horarios()
 
-        self.distribuir(
-          aspirantes, labs, horarios, fechas)
+            capacidad = self.cap.diaria(labs, horarios)
 
-    def distribuir(self, asp, labs, horarios, fechas):
+            dias = self.dias.calcular(
+                len(asp_sede), capacidad
+            )
 
-        i=0
-        for a in asp:
-            f = fechas[i//len(horarios)]
-            h = horarios[i%len(horarios)]
-            l = labs[i%len(labs)]
+            fechas = self.gen.generar(
+                fecha_inicio, dias
+            )
 
-            self.srv.guardar_asignacion({
-                "identificacion_aspirante": a["cedula"],
-                "laboratorio_id": l["lab_id"],
-                "fecha_examen": f,
-                "horario_id": h["id_horario"]
-                })
-            i+=1
+            self._distribuir(
+                asp_sede, labs, horarios, fechas, periodo
+            )
+
+    def _distribuir(self, asp, labs, horarios, fechas, periodo):
+
+        idx = 0
+
+        for f in fechas:
+            for h in horarios:
+                for l in labs:
+
+                    usados = self.srv.contar_asignados(
+                        l["lab_id"], h["id_horario"]
+                    )
+
+                    libres = (
+                        l["capacidad_equipos"] - usados
+                    )
+
+                    for _ in range(libres):
+
+                        if idx >= len(asp):
+                            return
+
+                        self.srv.guardar_asignacion({
+                            "identificacion":
+                                asp[idx]["identificacion"],
+
+                            "laboratorio_id":
+                                l["lab_id"],
+
+                            "horario_id":
+                                h["id_horario"],
+
+                            "fecha_examen": f.isoformat(),
+
+                            "periodo_id": periodo 
+
+                        })
+
+                        idx += 1
