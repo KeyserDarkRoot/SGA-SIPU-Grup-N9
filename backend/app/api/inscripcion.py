@@ -74,6 +74,7 @@ def ofertas_agrupadas():
             agrupado[bloque][carrera].append({
                 "ofa_id": o["ofa_id"],
                 "sede": o["sede"]["nombre_sede"],
+                "sede_id": o["sede_id"],  # 👈 ESTO FALTABA
                 "modalidad": o["modalidad"],
                 "jornada_id": o["jornada"],
                 "jornada_texto": jornada_map.get(o["jornada"], "N/A")
@@ -91,7 +92,7 @@ def finalizar_inscripcion(d:dict):
         # 1) sede
         s = db.table("sede")\
               .select("nombre_sede,ies_id")\
-              .eq("sede_id", d["sede_id"])\
+              .eq("sede_id", d["carreras"][0]["sede_id"])\
               .execute()
 
         nombre_sede = s.data[0]["nombre_sede"]
@@ -108,7 +109,8 @@ def finalizar_inscripcion(d:dict):
             "fecha_inscripcion": datetime.now().isoformat(),
             "estado": "registrado",
             "nombre_sede": nombre_sede,
-            "sede_id": d["sede_id"]
+            "sede_id": d["carreras"][0]["sede_id"]
+
         }
 
         r = db.table("inscripciones").insert(ins).execute()
@@ -117,12 +119,12 @@ def finalizar_inscripcion(d:dict):
         # 3) GUARDAR CARRERAS
         for i,c in enumerate(d["carreras"], start=1):
 
-            db.table("inscripcion_carreras")\
-              .insert({
+            db.table("inscripcion_carreras").insert({
                 "id_inscripcion": id_ins,
-                "ofa_id": c,
+                "ofa_id": int(c["ofa_id"]),  # 👈 AHORA SÍ
                 "prioridad": i
-              }).execute()
+            }).execute()
+
 
         return {"ok":True}
 
