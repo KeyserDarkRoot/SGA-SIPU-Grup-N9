@@ -3,7 +3,7 @@ from app.database.ConexionBD.api_supabase import crear_cliente
 from app.core.periodo import Periodo
 from app.core.oferta_academica import OfertaAcademica
 from app.core.reportes import ReporteAsignadosCSV # <--- Importar la nueva clase
-from app.core.asignacion_masiva import AsignacionMasiva
+from app.core.asignacion_examen import AsignacionMasiva
 from datetime import date
 
 router_admin = APIRouter()
@@ -130,30 +130,6 @@ def actualizar_nota(d: dict):
 def postulaciones():
     return db.table("inscripciones").select("*").execute().data
 
-# --- 5. ASIGNACIÓN ---
-@router_admin.post("/asignacion/ejecutar")
-def ejecutar_asignacion(d: dict):
-    periodo_id = d.get("periodo_id")
-    if not periodo_id: raise HTTPException(status_code=400, detail="Falta periodo")
-    log_resultados = []
-    try:
-        ofertas = db.table("oferta_academica").select("*").eq("periodo_id", periodo_id).execute().data
-        for oferta in ofertas:
-            carrera = oferta["nombre_carrera"]
-            cupos = oferta["cupos_disponibles"]
-            aspirantes = db.table("inscripciones").select("*").eq("carrera_seleccionada", carrera).eq("estado_inscripcion", "REGISTRADO").execute().data
-            aspirantes_ordenados = sorted(aspirantes, key=lambda x: x.get("puntaje_final", 0), reverse=True)
-            asignados = aspirantes_ordenados[:cupos]
-            rechazados = aspirantes_ordenados[cupos:]
-
-            for a in asignados: db.table("inscripciones").update({"estado_inscripcion": "ASIGNADO"}).eq("id_inscripcion", a["id_inscripcion"]).execute()
-            for r in rechazados: db.table("inscripciones").update({"estado_inscripcion": "RECHAZADO"}).eq("id_inscripcion", r["id_inscripcion"]).execute()
-
-            log_resultados.append({"carrera": carrera, "cupos": cupos, "postulantes": len(aspirantes), "asignados": len(asignados), "rechazados": len(rechazados)})
-        return {"ok": True, "msg": "Proceso completado", "detalles": log_resultados}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 # --- 6. REPORTES ---
 @router_admin.get("/reportes/stats")
 def obtener_reportes():
@@ -170,7 +146,9 @@ def obtener_reportes():
         return {"carreras": {"labels": list(conteo_carreras.keys()), "values": list(conteo_carreras.values())}, "estados": {"labels": list(conteo_estados.keys()), "values": list(conteo_estados.values())}}
     except Exception as e:
         return {"carreras": {"labels":[], "values":[]}, "estados": {"labels":[], "values":[]}}
-    
+
+
+## Cambiar para exportar CSV de asignados    
 @router_admin.get("/asignacion/exportar/{periodo_id}")
 def exportar_asignados(periodo_id: int):
     """
@@ -222,9 +200,17 @@ def asignar_examenes(idperiodo:int):
 @router_admin.post("/config-examen")
 def configurar_examen(data:dict):
 
+    # Eliminar configuraciones previas para el mismo periodo
+    db.table("config_examen")\
+        .update({"estado":"INACTIVO"})\
+        .eq("periodo_id", data["periodo_id"])\
+        .execute()
+
+
     payload = {
         "periodo_id": data["periodo_id"],
-        "fecha_inicio": data["fecha_inicio"]
+        "fecha_inicio": data["fecha_inicio"],
+        "estado": "ACTIVO"   # 👈 CLAVE
     }
 
     db.table("config_examen")\
@@ -235,4 +221,60 @@ def configurar_examen(data:dict):
       "ok": True,
       "msg": "Fecha de inicio guardada correctamente"
     }
+
+
+@router_admin.post("/asignacion/ejecutar")
+def ejecutar_asignacion(data: dict):
+
+    periodo = data["periodo_id"]
+
+    # Validar estado del periodo
+    p = db.table("periodo")\
+          .select("estado")\
+          .eq("idperiodo", periodo)\
+          .limit(1)\
+          .execute()
+
+    if not p.data:
+        raise HTTPException(404,"Periodo no existe")
+
+    if p.data[0]["estado"] != "cerrado":
+        raise HTTPException(
+            status_code=400,
+            detail="Debe CERRAR el periodo antes de asignar"
+        )
+
+    core = AsignacionMasiva()
+    
+    # Validar si ya se ejecutó la asignación    
+    asig = db.table("asignacion_examen")\
+        .select("asignacion_id")\
+        .eq("periodo_id", periodo)\
+        .limit(1)\
+        .execute()
+
+    if asig.data:
+        raise HTTPException(
+            400,
+            "La asignación ya fue ejecutada"
+        )
+
+    core.ejecutar(periodo)
+
+    return {
+        "ok": True,
+        "msg": "Asignación masiva ejecutada correctamente"
+    }
+
+@router_admin.get("/asignacion/existe/{periodo}")
+def existe_asignacion(periodo:int):
+
+ r = db.table("asignacion_examen")\
+       .select("asignacion_id")\
+       .eq("periodo_id", periodo)\
+       .limit(1)\
+       .execute()
+
+ return {"existe": True if r.data else False}
+
 
