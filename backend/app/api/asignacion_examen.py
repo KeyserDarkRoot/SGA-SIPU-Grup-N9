@@ -1,19 +1,22 @@
 from fastapi import APIRouter
-from app.core.asignacion_examen import AsignacionMasiva
-from app.services.examen_service import ExamenService
+from app.core.asignacion_examen import AsignacionExamen
 
 router = APIRouter()
-service = ExamenService()
+core = AsignacionExamen()
 
-@router.post("/ejecutar")
-def ejecutar_asignacion(data:dict):
+@router.post("/asignar/{cedula}")
+def asignar_examen(cedula: str):
 
- periodo = data["periodo_id"]
+    try:
+        data = core.ejecutar(cedula)
+        return {
+            "ok": True,
+            "msg": "Examen asignado correctamente",
+            "data": data
+        }
 
- motor = AsignacionMasiva(service)
- motor.ejecutar(periodo)
-
- return {
-  "ok": True,
-  "total": "Asignación masiva completada"
- }
+    except Exception as e:
+        return {
+            "ok": False,
+            "msg": str(e)
+        }
