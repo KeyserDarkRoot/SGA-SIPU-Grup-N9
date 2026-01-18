@@ -42,12 +42,19 @@ async function cargarEstadoGeneral() {
         const statusRn = document.getElementById("status_rn");
         const cardRn = document.getElementById("card_rn");
 
-        if (data.registro_nacional === "HABILITADO") {
+        let estadoRN = data.registro_nacional;
+
+        if (estadoRN === "HABILITADO") {
             cardRn.classList.add("done-step");
             statusRn.innerHTML = "<b style='color:#27ae60'>✔ HABILITADO</b>";
-        } else {
+        }
+        else if (estadoRN === "CONDICIONADO") {
+            statusRn.innerHTML = "<b style='color:#f39c12'>⚠ CONDICIONADO</b>";
+        }
+        else {
             statusRn.innerHTML = "<b style='color:#c0392b'>❌ NO HABILITADO</b>";
         }
+
 
         // --- PASO 2: INSCRIPCIÓN (ID: container_btn_inscripcion) ---
         const containerBtn = document.getElementById("container_btn_inscripcion");
@@ -62,15 +69,33 @@ async function cargarEstadoGeneral() {
                     <i class="fas fa-file-pdf"></i> Comprobante
                 </button>
             `;
-        } else {
-            cardIns.classList.add("active-step");
-            containerBtn.innerHTML = `
-                <div style="color:#e67e22; margin-bottom:5px;">Pendiente</div>
-                <button onclick="irAInscripcion()" class="btn-action btn-blue">
-                    <i class="fas fa-pen"></i> Inscribirse
-                </button>
-            `;
         }
+        else {
+
+            // 🚫 BLOQUEAR SI NO ESTÁ HABILITADO
+            if (estadoRN !== "HABILITADO") {
+                containerBtn.innerHTML = `
+                <div style="color:#c0392b; font-weight:bold;">
+                    Inscripción bloqueada<br>
+                    Estado: ${estadoRN}
+                </div>
+                `;
+                cardIns.classList.remove("active-step");
+                cardIns.classList.add("blocked-step");
+            }
+
+            // ✅ PERMITIR SOLO SI HABILITADO
+            else {
+                cardIns.classList.add("active-step");
+                containerBtn.innerHTML = `
+                    <div style="color:#e67e22; margin-bottom:5px;">Pendiente</div>
+                    <button onclick="irAInscripcion()" class="btn-action btn-blue">
+                        <i class="fas fa-pen"></i> Inscribirse
+                    </button>
+                `;
+            }
+        }
+
 
         // --- PASO 3: EVALUACIÓN (ID: status_exa) ---
         const statusExa = document.getElementById("status_exa");
