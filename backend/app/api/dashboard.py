@@ -16,9 +16,12 @@ def obtener_resumen(cedula: str):
     ins = db.table("inscripciones").select("*").eq("identificacion", cedula).execute()
     inscripcion_data = ins.data[0] if ins.data else None
     
-    estado_ins = "PENDIENTE"
+    # Lógica para determinar el estado real (INVALIDADO, REGISTRADO, etc.)
+    estado_real_inscripcion = "PENDIENTE"
+    
     if inscripcion_data:
-        estado_ins = "COMPLETADA"
+        # Intentamos leer 'estado' (según tu base de datos) o 'estado_inscripcion' por seguridad
+        estado_real_inscripcion = inscripcion_data.get("estado", inscripcion_data.get("estado_inscripcion", "REGISTRADO"))
 
     # Verificar Examen
     estado_examen = "PENDIENTE"
@@ -34,18 +37,18 @@ def obtener_resumen(cedula: str):
 
     return {
         "registro_nacional": estado_rn,
-        "inscripcion": estado_ins,
+        "estado_inscripcion_real": estado_real_inscripcion, # <--- DATO CLAVE
+        "inscripcion": "COMPLETADA" if inscripcion_data else "PENDIENTE",
         "examen": estado_examen,
         "asignacion": estado_asignacion,
         "detalle_inscripcion": inscripcion_data,
         "puntaje": puntaje
     }
 
-# 2. LISTAR OFERTA ACADÉMICA (Solo activas)
+# 2. LISTAR OFERTA ACADÉMICA
 @router_dashboard.get("/ofertas-disponibles")
 def listar_ofertas():
     try:
-        # Traer ofertas activas y con cupos
         res = db.table("oferta_academica").select("*").eq("estado_oferta", "ACTIVA").gt("cupos_disponibles", 0).execute()
         return res.data
     except Exception as e:
@@ -54,9 +57,7 @@ def listar_ofertas():
 # 3. REALIZAR INSCRIPCIÓN
 @router_dashboard.post("/inscribir")
 def inscribir_aspirante(data: dict):
-    # data = { "cedula": "...", "nombres": "...", "apellidos": "...", "carrera": "...", "id_oferta": 123 }
     try:
-        # Verificar si ya está inscrito
         existe = db.table("inscripciones").select("id_inscripcion").eq("identificacion", data["cedula"]).execute()
         if existe.data:
             raise HTTPException(status_code=400, detail="Ya tienes una inscripción activa.")
@@ -67,14 +68,13 @@ def inscribir_aspirante(data: dict):
             "apellidos": data["apellidos"],
             "carrera_seleccionada": data["carrera"],
             "fecha_inscripcion": str(date.today()),
-            "estado_inscripcion": "REGISTRADO"
+            "estado": "registrado", # Aseguramos usar 'estado' si esa es tu columna
+            "estado_inscripcion": "REGISTRADO" # O esta si usas la otra
         }
         
+        # Nota: Ajusta el payload según el nombre real de tu columna en Supabase
+        
         db.table("inscripciones").insert(payload).execute()
-        
-        # Restar un cupo (Opcional, depende de tu lógica de negocio)
-        # db.table("oferta_academica").update({"cupos_disponibles": cupos - 1})...
-        
         return {"ok": True, "msg": "Inscripción exitosa"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) 
+        raise HTTPException(status_code=400, detail=str(e))
