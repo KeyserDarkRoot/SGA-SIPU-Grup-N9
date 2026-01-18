@@ -3,8 +3,9 @@ let seleccion = {}
 let periodoSeleccionado = null
 let tipoDoc = null
 let limite = 0
-let seleccionadas = []
-
+let seleccionadas = [] // Guardará objetos {ofa_id, carrera, bloque, sede, modalidad, jornada}
+let permiteMultiCampos = true;
+let camposSeleccionados = new Set(); // Rastrea los nombres de los bloques (Campos de Conocimiento)
 
 const user = JSON.parse(localStorage.getItem("user"))
 
@@ -28,332 +29,402 @@ function cargarPaso1(){
     fetch("http://127.0.0.1:8000/inscripcion/datos/" + user.cedula)
     .then(r => r.json())
     .then(d => {
-        // 1. Definimos exactamente qué campos queremos mostrar
         const camposPermitidos = [
-            'tipodocumento', 
-            'identificacion', 
-            'nombres', 
-            'apellidos', 
-            'nacionalidad', 
-            'fechanacimiento', 
-            'estadocivil', 
-            'sexo', 
-            'genero', 
-            'autoidentificacion'
+            'tipodocumento', 'identificacion', 'nombres', 'apellidos', 
+            'nacionalidad', 'fechanacimiento', 'estadocivil', 'sexo', 
+            'genero', 'autoidentificacion'
         ];
 
-        // 2. Filtramos los datos que vienen del servidor
         const contenidoHTML = camposPermitidos.map(campo => {
-            // Verificamos si el dato existe para evitar errores
             const valor = d[campo] !== undefined ? d[campo] : "No disponible";
-            // Formateamos el nombre del campo para que se vea bien (ej: tipodocumento -> Tipo documento)
             const etiqueta = campo.charAt(0).toUpperCase() + campo.slice(1);
-            
             return `<p><b>${etiqueta}</b>: ${valor}</p>`;
         }).join("");
 
-        // 3. Renderizamos en el HTML
         document.getElementById("contenido").innerHTML = `
             <div class="box">
                 <h3>Datos del Registro Nacional</h3>
-                <div class="datos-personales">
-                    ${contenidoHTML}
-                </div>
+                <div class="datos-personales">${contenidoHTML}</div>
                 <button class="btn" onclick="cargarPaso2()">Siguiente</button>
             </div>
         `;
     });
 }
+
 // ===================== PASO 2 =====================
 
-function cargarPaso2(){
+// Variable global para almacenar las ofertas y permitir filtrado rápido
+let ofertasGlobales = {}; 
 
- activar(2)
+async function cargarPaso2() {
+    activar(2);
+    try {
+        const resCfg = await fetch("http://127.0.0.1:8000/inscripcion/config-multi-campos").then(r => r.json());
+        ofertasGlobales = await fetch("http://127.0.0.1:8000/inscripcion/ofertas-agrupadas").then(r => r.json());
 
- fetch("http://127.0.0.1:8000/inscripcion/ofertas")
- .then(r=>r.json())
- .then(oferta=>{
+        permiteMultiCampos = resCfg.permitir;
 
- document.getElementById("contenido").innerHTML=`
+        document.getElementById("contenido").innerHTML = `
+          <div class="box">
+            <h3>Selección de carreras</h3>
+        
+            <div class="search-box">
+                <input type="text" id="buscador" 
+                       placeholder="Escribe el nombre de la carrera..." 
+                       onkeyup="filtrarAcordeon()">
+            </div>
 
- <div class="box">
+            <div class="panel">
+                <span class="badge" id="contador">${seleccionadas.length}/${limite} seleccionadas</span>
+            </div>
+            <div id="acordeon-conocimiento"></div>
+                <h4>Seleccionadas</h4>
+                <ul id="listaSel"></ul>
+                <div class="actions">
+                    <button class="btn" onclick="cargarPaso1()">Atrás</button>
+                    <button class="btn" onclick="cargarPaso3()">Siguiente</button>
+                </div>
+            </div>`;
 
- <h3>Selección de carreras</h3>
+        renderAcordeon(ofertasGlobales);
+        actualizarLista();
+    } catch (error) {
+        console.error("Error cargando ofertas:", error);
+    }
+}
+function filtrarAcordeon() {
+    let input = document.getElementById("buscador");
+    if (!input) return;
+    
+    let txt = input.value.toLowerCase();
+    // Seleccionamos los bloques (los <details>)
+    const bloques = document.querySelectorAll(".bloque-moderno");
 
- <div class="panel">
-  <span class="badge">
-   ${seleccionadas.length}/${limite} seleccionadas
-  </span>
- </div>
+    bloques.forEach(bloque => {
+        let tieneCoincidencia = false;
+        // Seleccionamos las tarjetas nuevas
+        const tarjetas = bloque.querySelectorAll(".tarjeta-carrera-nueva");
 
- <div class="search-box">
-  <input id="buscador" 
-  placeholder="Buscar carrera..."
-  onkeyup="filtrar()">
- </div>
+        tarjetas.forEach(tarjeta => {
+            // Obtenemos el nombre desde el atributo data-nombre que pusimos en renderAcordeon
+            const nombreCarrera = tarjeta.getAttribute("data-nombre") || "";
+            
+            if (nombreCarrera.includes(txt)) {
+                tarjeta.style.display = "flex"; 
+                tieneCoincidencia = true;
+            } else {
+                tarjeta.style.display = "none";
+            }
+        });
 
- <h4>Carreras disponibles</h4>
- <div id="cards"></div>
-
- <h4>Seleccionadas (arrastre para ordenar)</h4>
- <ul id="listaSel"></ul>
-
- <button class="btn" onclick="cargarPaso1()">Atrás</button>
- <button class="btn" onclick="cargarPaso3()">Siguiente</button>
-
- </div>
- `
-
- window.dataOferta = oferta
- renderCards(oferta)
- actualizarLista()
- })
+        // Si hay texto, manejamos la visibilidad del bloque completo
+        if (txt.length > 0) {
+            if (tieneCoincidencia) {
+                bloque.style.display = "block";
+                bloque.open = true; // Abre automáticamente para mostrar resultados
+            } else {
+                bloque.style.display = "none"; // Oculta bloques sin resultados
+            }
+        } else {
+            // Si el buscador está vacío, mostramos todos los bloques y los cerramos
+            bloque.style.display = "block";
+            bloque.open = false;
+            tarjetas.forEach(t => t.style.display = "flex");
+        }
+    });
 }
 
+function renderAcordeon(data) {
+    const container = document.getElementById("acordeon-conocimiento");
+    container.innerHTML = "";
 
+    for (const [bloque, carreras] of Object.entries(data)) {
+        let details = document.createElement("details");
+        details.className = "bloque-moderno";
+        
+        let htmlCarreras = Object.entries(carreras).map(([nombre, opciones]) => {
+            const idSafe = nombre.replace(/\s+/g, '_');
+            const sedesUnicas = [...new Set(opciones.map(o => o.sede))];
 
-// ===================== SELECCIÓN =====================
+            // IMPORTANTE: Se añade data-nombre para que el buscador lo encuentre
+            return `
+                <div class="tarjeta-carrera-nueva" data-nombre="${nombre.toLowerCase()}">
+                    <div class="info-principal">
+                        <span class="carrera-titulo">${nombre}</span>
+                    </div>
+                    <div class="seleccion-multiple">
+                        <select id="sede_${idSafe}" class="select-mini" onchange="actualizarFiltros('${nombre}')">
+                            ${sedesUnicas.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        <select id="mod_${idSafe}" class="select-mini" onchange="actualizarFiltros('${nombre}')"></select>
+                        <select id="jor_${idSafe}" class="select-mini"></select>
+                    </div>
+                    <button class="btn-agregar-estilo" onclick="ejecutarSeleccion('${nombre}', '${bloque}')">
+                        Elegir
+                    </button>
+                </div>`;
+        }).join("");
 
-function sel(id,carrera,sede_id){
-
- if(seleccionadas.includes(id)){
-  alert("Ya seleccionó esta carrera")
-  return
- }
-
- if(seleccionadas.length >= limite){
-  alert("Solo puede escoger "+limite+" carreras")
-  return
- }
-
- seleccionadas.push(id)
- seleccion.sede_id = sede_id
-
- actualizarLista()
+        details.innerHTML = `<summary class="summary-estilo">▶ <b>${bloque}</b></summary>
+                             <div class="carreras-grid">${htmlCarreras}</div>`;
+        container.appendChild(details);
+        
+        Object.keys(carreras).forEach(n => actualizarFiltros(n));
+    }
 }
 
+function actualizarFiltros(nombreCarrera) {
+    const idSafe = nombreCarrera.replace(/\s+/g, '_');
+    const sedeSel = document.getElementById(`sede_${idSafe}`).value;
+    
+    // Buscar las opciones de esta carrera en el objeto global
+    let opcionesCarrera = [];
+    for (let b in ofertasGlobales) {
+        if (ofertasGlobales[b][nombreCarrera]) {
+            opcionesCarrera = ofertasGlobales[b][nombreCarrera];
+            break;
+        }
+    }
 
+    // 1. Filtrar y actualizar Modalidades basadas en la Sede
+    const opcionesDeSede = opcionesCarrera.filter(o => o.sede === sedeSel);
+    const modsUnicas = [...new Set(opcionesDeSede.map(o => o.modalidad))];
+    const selectMod = document.getElementById(`mod_${idSafe}`);
+    
+    // Guardamos el valor previo para intentar mantenerlo si existe en la nueva sede
+    const valorPrevioMod = selectMod.value;
+    selectMod.innerHTML = modsUnicas.map(m => `<option value="${m}">${m}</option>`).join('');
+    if (modsUnicas.includes(valorPrevioMod)) selectMod.value = valorPrevioMod;
 
-// Mostrar SELECCIÓN
-
-function actualizarLista(){
-
- let ul = document.getElementById("listaSel")
- if(!ul) return
-
- ul.innerHTML=""
-
- seleccionadas.forEach((id,i)=>{
-
-  ul.innerHTML+=`
-  <li draggable="true"
-  ondragstart="drag(event,${i})"
-  ondrop="drop(event,${i})"
-  ondragover="allowDrop(event)"
-  class="drag">
-
-   ${i+1}. Oferta ${id}
-   <button class="btn btn-danger"
-   onclick="eliminar(${i})">X</button>
-  </li>`
- })
+    // 2. Filtrar y actualizar Jornadas basadas en Sede + Modalidad
+    const modSel = selectMod.value;
+    const opcionesFinales = opcionesDeSede.filter(o => o.modalidad === modSel);
+    const selectJor = document.getElementById(`jor_${idSafe}`);
+    
+    selectJor.innerHTML = opcionesFinales.map(o => 
+        `<option value="${o.jornada_id}">${o.jornada_texto}</option>`
+    ).join('');
 }
 
-function allowDrop(ev){
- ev.preventDefault()
- ev.target.classList.add("drag-over")
+function ejecutarSeleccion(nombreCarrera, bloque) {
+    const idSafe = nombreCarrera.replace(/\s+/g, '_');
+    const sede = document.getElementById(`sede_${idSafe}`).value;
+    const mod = document.getElementById(`mod_${idSafe}`).value;
+    const jorId = document.getElementById(`jor_${idSafe}`).value;
+    const jorTexto = document.getElementById(`jor_${idSafe}`).options[document.getElementById(`jor_${idSafe}`).selectedIndex].text;
+
+    // Buscamos el ofa_id que coincida exactamente con lo seleccionado
+    const match = ofertasGlobales[bloque][nombreCarrera].find(o => 
+        o.sede === sede && o.modalidad === mod && o.jornada_id == jorId
+    );
+
+    if (match) {
+        intentarAgregar(match.ofa_id, nombreCarrera, bloque, sede, mod, jorTexto);
+    }
 }
 
+// Función intermedia para extraer los datos del select antes de agregar
+function prepararSeleccion(idElemento, nombreCarrera, bloque) {
+    const select = document.getElementById("sel_" + idElemento);
+    const opt = select.options[select.selectedIndex];
+    
+    const ofa_id = select.value;
+    const sede = opt.getAttribute("data-sede");
+    const mod = opt.getAttribute("data-mod");
+    const jor = opt.getAttribute("data-jor");
 
-let dragIndex=null
-
-function drag(ev,i){
- dragIndex=i
- ev.target.classList.add("dragging") // 👈 efecto visual
+    intentarAgregar(ofa_id, nombreCarrera, bloque, sede, mod, jor);
 }
 
-function drop(ev,i){
+// ===================== LÓGICA DE SELECCIÓN =====================
 
- ev.target.classList.remove("dragging") // 👈 quitar efecto
+function intentarAgregar(ofa_id, carrera, bloque, sede, mod, jor) {
+    // 1. Validación de Límite Máximo
+    if (seleccionadas.length >= limite) {
+        alert("Límite de " + limite + " carreras alcanzado.");
+        return;
+    }
 
- let temp = seleccionadas[dragIndex]
- seleccionadas[dragIndex] = seleccionadas[i]
- seleccionadas[i] = temp
+    // 2. Validación de Carrera Única (Global: No repetir nombre en otra sede)
+    if (seleccionadas.find(s => s.carrera === carrera)) {
+        alert(`La carrera "${carrera}" ya está en tu lista. Solo puedes postular a una misma carrera una vez.`);
+        return;
+    }
 
- actualizarLista()
+    // 3. Validación de Multi-Campos de Conocimiento
+    // Si la configuración es 'NO' (permiteMultiCampos === false)
+    if (!permiteMultiCampos && camposSeleccionados.size > 0 && !camposSeleccionados.has(bloque)) {
+        const campoActual = Array.from(camposSeleccionados)[0];
+        alert(`RESTRICCIÓN: Por reglamento, solo puedes elegir carreras pertenecientes al mismo campo.`);
+        return;
+    }
+
+    // Si pasa todas las validaciones, agregamos
+    seleccionadas.push({ 
+        ofa_id, 
+        carrera, 
+        bloque, 
+        sede, 
+        modalidad: mod, 
+        jornada: jor 
+    });
+    
+    // Registrar el bloque para futuras validaciones
+    camposSeleccionados.add(bloque);
+    
+    actualizarLista();
+    document.getElementById("contador").innerText = `${seleccionadas.length}/${limite} seleccionadas`;
 }
 
+function actualizarLista() {
+    const lista = document.getElementById("listaSel");
+    const contador = document.getElementById("contador");
+    
+    if (!lista) return;
 
+    contador.innerText = `${seleccionadas.length}/${limite} seleccionadas`;
+    contador.className = seleccionadas.length >= limite ? "badge badge-full" : "badge";
 
+    lista.innerHTML = "";
 
-// Eliminar de SELECCIÓN
+    seleccionadas.forEach((item, index) => {
+        const li = document.createElement("li");
+        
+        // --- ATRIBUTOS PARA DRAG & DROP NATIVO ---
+        li.draggable = true;
+        li.setAttribute("ondragstart", `drag(event, ${index})`);
+        li.setAttribute("ondrop", `drop(event, ${index})`);
+        li.setAttribute("ondragover", "allowDrop(event)");
+        // -----------------------------------------
 
-function eliminar(pos){
+        li.className = "item-seleccionado-detallado cursor-move";
 
- seleccionadas.splice(pos,1)
- actualizarLista()
+        li.innerHTML = `
+            <div class="drag-handle">⠿</div>
+            <div class="orden-numero">${index + 1}</div>
+            <div class="detalles-carrera">
+                <div class="fila-principal">
+                    <span class="nombre-carrera-sel">${item.carrera}</span>
+                    <span class="bloque-tag">${item.bloque}</span>
+                </div>
+                <div class="fila-secundaria">
+                    <span><b>Sede:</b> ${item.sede}</span>
+                    <span><b>Mod:</b> ${item.modalidad}</span>
+                    <span><b>Jornada:</b> ${item.jornada}</span>
+                </div>
+            </div>
+            <button class="btn-eliminar" onclick="eliminarSeleccion(${index})" title="Eliminar">
+                &times;
+            </button>
+        `;
+        lista.appendChild(li);
+    });
 }
 
+function eliminarSeleccion(index) {
+    seleccionadas.splice(index, 1);
+    
+    // Recalcular los campos activos
+    camposSeleccionados.clear();
+    seleccionadas.forEach(s => camposSeleccionados.add(s.bloque));
+    
+    actualizarLista();
+}
 
-
-// ===================== PASO 3 =====================
+// ===================== PASO 3 Y FINALIZAR =====================
 
 function cargarPaso3(){
+    activar(3)
+    let html = seleccionadas.map((s,i) => `<p>${i+1}. ${s.carrera} - ${s.sede}</p>`).join("")
 
- activar(3)
-
- let html = seleccionadas.map((c,i)=>
- `<p>${i+1}. Oferta ${c}</p>`).join("")
-
- document.getElementById("contenido").innerHTML=`
-
- <div class="box">
- <h3>Confirmación final</h3>
-
- ${html}
-
- <button class="btn" onclick="cargarPaso2()">Atrás</button>
- <button class="btn" onclick="finalizar()">Confirmar inscripción</button>
- </div>
- `
+    document.getElementById("contenido").innerHTML=`
+        <div class="box">
+            <h3>Confirmación final</h3>
+            <div class="resumen">${html}</div>
+            <button class="btn" onclick="cargarPaso2()">Atrás</button>
+            <button class="btn" onclick="finalizar()">Confirmar inscripción</button>
+        </div>`
 }
-
-
-
-// ===================== GUARDAR =====================
 
 function finalizar(){
-
- fetch("http://127.0.0.1:8000/inscripcion/finalizar",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({
-   periodo_id: periodoSeleccionado,
-   tipo_documento: tipoDoc,
-   cedula: user.cedula,
-   nombres: user.nombres,
-   apellidos: user.apellidos,
-   sede_id: seleccion.sede_id,
-
-   carreras: seleccionadas   // 👈 ARRAY
-  })
- })
- .then(r=>r.json())
- .then(r=>{
-   if(r.ok){
-     alert("Inscripción registrada correctamente")
-     window.location="dashboard.html"
-   }else{
-     alert("Error: "+r.msg)
-   }
- })
+    fetch("http://127.0.0.1:8000/inscripcion/finalizar",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            periodo_id: periodoSeleccionado,
+            tipo_documento: tipoDoc,
+            cedula: user.cedula,
+            nombres: user.nombres,
+            apellidos: user.apellidos,
+            carreras: seleccionadas.map(s => s.ofa_id) // Enviamos solo IDs para la tabla intermedia
+        })
+    })
+    .then(r=>r.json())
+    .then(r=>{
+        if(r.ok){
+            alert("Inscripción registrada correctamente");
+            window.location="dashboard.html";
+        }else{
+            alert("Error: " + r.msg);
+        }
+    })
 }
 
+// ===================== UTILIDADES =====================
 
+// Variable global para rastrear qué índice se está moviendo
+let dragIndex = null;
 
-// ===================== CARGA DATOS BD =====================
-
-async function cargarPeriodos(){
-
- const res = await fetch(
- "http://127.0.0.1:8000/inscripcion/periodos")
-
- const data = await res.json()
-
- if(data.length === 0){
-  alert("No hay periodos activos")
-  return
- }
-
- periodoSeleccionado = data[0].idperiodo
+function allowDrop(ev) {
+    ev.preventDefault(); // Necesario para permitir soltar
 }
 
-
-async function cargarTipoDocumento(){
-
- const res = await fetch(
- "http://127.0.0.1:8000/inscripcion/tipo-documento/"+user.cedula)
-
- const data = await res.json()
-
- if(!data){
-  alert("No se encontró tipo de documento")
-  return
- }
-
- tipoDoc = data.tipodocumento
+function drag(ev, i) {
+    dragIndex = i;
+    // Opcional: añadir efecto visual al elemento que se arrastra
+    ev.dataTransfer.setData("text", i); 
 }
 
-async function cargarLimite(){
+function drop(ev, i) {
+    ev.preventDefault();
+    
+    // Evitamos errores si se suelta en el mismo lugar
+    if (dragIndex === null || dragIndex === i) return;
 
- const r = await fetch(
- "http://127.0.0.1:8000/inscripcion/config-max-carreras")
+    // Lógica de intercambio de posiciones en el array
+    let temp = seleccionadas[dragIndex];
+    seleccionadas[dragIndex] = seleccionadas[i];
+    seleccionadas[i] = temp;
 
- const d = await r.json()
- limite = d.max
-
- document.getElementById("info")
- .innerHTML=`Puede escoger ${limite} carreras`
-}
-
-function renderCards(data){
-
- let div=document.getElementById("cards")
- div.innerHTML=""
-
- data.forEach(o=>{
-
-  div.innerHTML+=`
-  <div class="card">
-   <div>
-    <b>${o.nombre_carrera}</b><br>
-    <span class="tag">${o.BloqueConocimiento}</span>
-   </div>
-
-   <button class="btn"
-   onclick="sel('${o.ofa_id}',
-   '${o.nombre_carrera}',
-   '${o.sede_id}')">
-    Agregar
-   </button>
-  </div>`
- })
-}
-
-
-function filtrar(){
-
- let txt = buscador.value.toLowerCase()
-
- let f = dataOferta.filter(o=>
-  o.nombre_carrera.toLowerCase().includes(txt))
-
- renderCards(f)
-}
-
-function allowDrop(ev){
- ev.preventDefault()
- ev.target.classList.add("drag-over")
-}
-
-function drag(ev,i){
- dragIndex=i
-}
-
-function drop(ev,i){
-
- ev.target.classList.remove("drag-over")
-
- let temp=seleccionadas[dragIndex]
- seleccionadas[dragIndex]=seleccionadas[i]
- seleccionadas[i]=temp
-
- actualizarLista()
+    // Refrescar la lista para actualizar los números de prioridad (1, 2, 3...)
+    actualizarLista();
 }
 
 // ===================== INIT =====================
 
-cargarPaso1()
-cargarPeriodos()
-cargarTipoDocumento()
-cargarLimite()
+async function init() {
+    cargarPaso1();
+    await cargarPeriodos();
+    await cargarTipoDocumento();
+    await cargarLimite();
+}
+
+async function cargarPeriodos(){
+    const res = await fetch("http://127.0.0.1:8000/inscripcion/periodos");
+    const data = await res.json();
+    if(data.length > 0) periodoSeleccionado = data[0].idperiodo;
+}
+
+async function cargarTipoDocumento(){
+    const res = await fetch("http://127.0.0.1:8000/inscripcion/tipo-documento/"+user.cedula);
+    const data = await res.json();
+    if(data) tipoDoc = data.tipodocumento;
+}
+
+async function cargarLimite(){
+    const r = await fetch("http://127.0.0.1:8000/inscripcion/config-max-carreras");
+    const d = await r.json();
+    limite = d.max;
+}
+
+init();
