@@ -85,21 +85,14 @@ def ofertas_agrupadas():
         return {"Error": str(e)}
 
 @router_inscripcion.post("/finalizar")
-def finalizar_inscripcion(d:dict):
-
+def finalizar_inscripcion(d: dict):
     try:
-
-        # 1) sede
-        s = db.table("sede")\
-              .select("nombre_sede,ies_id")\
-              .eq("sede_id", d["carreras"][0]["sede_id"])\
-              .execute()
-
-        nombre_sede = s.data[0]["nombre_sede"]
+        # 1) Obtener datos de la sede principal (primera opción)
+        s = db.table("sede").select("nombre_sede,ies_id").eq("sede_id", d["carreras"][0]["sede_id"]).execute()
         ies_real = s.data[0]["ies_id"]
 
-        # 2) INSCRIPCION
-        ins = {
+        # 2) Insertar cabecera de INSCRIPCION
+        ins_data = {
             "periodo_id": int(d["periodo_id"]),
             "ies_id": int(ies_real),
             "tipo_documento": d["tipo_documento"],
@@ -107,30 +100,26 @@ def finalizar_inscripcion(d:dict):
             "nombres": d["nombres"],
             "apellidos": d["apellidos"],
             "fecha_inscripcion": datetime.now().isoformat(),
-            "estado": "registrado",
-            "nombre_sede": nombre_sede,
-            "sede_id": d["carreras"][0]["sede_id"]
-
+            "estado": "registrado"
         }
-
-        r = db.table("inscripciones").insert(ins).execute()
+        r = db.table("inscripciones").insert(ins_data).execute()
         id_ins = r.data[0]["id_inscripcion"]
 
-        # 3) GUARDAR CARRERAS
-        for i,c in enumerate(d["carreras"], start=1):
-
-            db.table("inscripcion_carreras").insert({
+        # 3) Guardar CARRERAS en lote (Batch Insert)
+        lista_carreras = []
+        for i, c in enumerate(d["carreras"], start=1):
+            lista_carreras.append({
                 "id_inscripcion": id_ins,
-                "ofa_id": int(c["ofa_id"]),  # 👈 AHORA SÍ
+                "ofa_id": int(c["ofa_id"]),
                 "prioridad": i
-            }).execute()
+            })
+        
+        # Insertamos todas de golpe
+        db.table("inscripcion_carreras").insert(lista_carreras).execute()
 
-
-        return {"ok":True}
-
+        return {"ok": True}
     except Exception as e:
-        return {"ok":False,"msg":str(e)}
-
+        return {"ok": False, "msg": str(e)}
 
 
 @router_inscripcion.get("/ofertas")
