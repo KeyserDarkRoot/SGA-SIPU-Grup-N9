@@ -32,6 +32,7 @@ app.include_router(router_dashboard, prefix="/dashboard")
 app.include_router(router_admin, prefix="/admin")
 app.include_router(router_examen, prefix="/examen")
 app.include_router(asignacion_router, prefix="/asignacion")
+app.include_router(asignacion_router, prefix="/asignacion", tags=["Asignación Examen"])
 
 @app.get("/certificados/{tipo}/{cedula}")
 async def descargar_certificado(tipo: str, cedula: str):
