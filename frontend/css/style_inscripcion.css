@@ -504,3 +504,77 @@ button:hover{
     font-weight: bold;
     cursor: pointer;
 }
+
+/* Contenedor de advertencia */
+.alerta-confirmacion {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+}
+
+.alerta-confirmacion h4 {
+    color: #92400e;
+    margin: 0 0 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alerta-confirmacion p {
+    color: #b45309;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Tarjetas de resumen final */
+.resumen-grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.tarjeta-resumen {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.prioridad-circulo {
+    background: #3b82f6;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.info-resumen h5 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1rem;
+}
+
+.info-resumen p {
+    margin: 2px 0 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.tag-final {
+    font-size: 0.7rem;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}

@@ -184,9 +184,15 @@ function renderAcordeon(data) {
         
         let htmlCarreras = Object.entries(carreras).map(([nombre, opciones]) => {
             const idSafe = nombre.replace(/\s+/g, '_');
-            const sedesUnicas = [...new Set(opciones.map(o => o.sede))];
+            
+            // Agrupamos sedes únicas pero manteniendo su ID
+            const sedesVistas = new Set();
+            const sedesUnicas = opciones.filter(o => {
+                const duplicado = sedesVistas.has(o.sede);
+                sedesVistas.add(o.sede);
+                return !duplicado;
+            });
 
-            // IMPORTANTE: Se añade data-nombre para que el buscador lo encuentre
             return `
                 <div class="tarjeta-carrera-nueva" data-nombre="${nombre.toLowerCase()}">
                     <div class="info-principal">
@@ -194,7 +200,7 @@ function renderAcordeon(data) {
                     </div>
                     <div class="seleccion-multiple">
                         <select id="sede_${idSafe}" class="select-mini" onchange="actualizarFiltros('${nombre}')">
-                            ${sedesUnicas.map(s => `<option value="${s}">${s}</option>`).join('')}
+                            ${sedesUnicas.map(s => `<option value="${s.sede}" data-id="${s.sede_id}">${s.sede}</option>`).join('')}
                         </select>
                         <select id="mod_${idSafe}" class="select-mini" onchange="actualizarFiltros('${nombre}')"></select>
                         <select id="jor_${idSafe}" class="select-mini"></select>
@@ -248,18 +254,20 @@ function actualizarFiltros(nombreCarrera) {
 
 function ejecutarSeleccion(nombreCarrera, bloque) {
     const idSafe = nombreCarrera.replace(/\s+/g, '_');
-    const sede = document.getElementById(`sede_${idSafe}`).value;
+    const comboSede = document.getElementById(`sede_${idSafe}`);
+    const sedeNombre = comboSede.value;
+    const sedeId = comboSede.options[comboSede.selectedIndex].getAttribute("data-id"); // <--- CAPTURAMOS EL UUID
+    
     const mod = document.getElementById(`mod_${idSafe}`).value;
     const jorId = document.getElementById(`jor_${idSafe}`).value;
     const jorTexto = document.getElementById(`jor_${idSafe}`).options[document.getElementById(`jor_${idSafe}`).selectedIndex].text;
 
-    // Buscamos el ofa_id que coincida exactamente con lo seleccionado
     const match = ofertasGlobales[bloque][nombreCarrera].find(o => 
-        o.sede === sede && o.modalidad === mod && o.jornada_id == jorId
+        o.sede === sedeNombre && o.modalidad === mod && o.jornada_id == jorId
     );
 
     if (match) {
-        intentarAgregar(match.ofa_id, nombreCarrera, bloque, sede, mod, jorTexto);
+        intentarAgregar(match.ofa_id, nombreCarrera, bloque, sedeNombre, mod, jorTexto, sedeId);
     }
 }
 
@@ -278,42 +286,34 @@ function prepararSeleccion(idElemento, nombreCarrera, bloque) {
 
 // ===================== LÓGICA DE SELECCIÓN =====================
 
-function intentarAgregar(ofa_id, carrera, bloque, sede, mod, jor) {
-    // 1. Validación de Límite Máximo
+function intentarAgregar(ofa_id, carrera, bloque, sede, mod, jor, sede_id) { // Añadido sede_id aquí
     if (seleccionadas.length >= limite) {
         alert("Límite de " + limite + " carreras alcanzado.");
         return;
     }
 
-    // 2. Validación de Carrera Única (Global: No repetir nombre en otra sede)
     if (seleccionadas.find(s => s.carrera === carrera)) {
-        alert(`La carrera "${carrera}" ya está en tu lista. Solo puedes postular a una misma carrera una vez.`);
+        alert(`La carrera "${carrera}" ya está en tu lista.`);
         return;
     }
 
-    // 3. Validación de Multi-Campos de Conocimiento
-    // Si la configuración es 'NO' (permiteMultiCampos === false)
     if (!permiteMultiCampos && camposSeleccionados.size > 0 && !camposSeleccionados.has(bloque)) {
-        const campoActual = Array.from(camposSeleccionados)[0];
-        alert(`RESTRICCIÓN: Por reglamento, solo puedes elegir carreras pertenecientes al mismo campo.`);
+        alert(`RESTRICCIÓN: Solo puedes elegir carreras del mismo campo.`);
         return;
     }
 
-    // Si pasa todas las validaciones, agregamos
     seleccionadas.push({ 
         ofa_id, 
         carrera, 
         bloque, 
         sede, 
         modalidad: mod, 
-        jornada: jor 
+        jornada: jor,
+        sede_id: sede_id // GUARDAMOS EL ID DE LA SEDE AQUÍ
     });
     
-    // Registrar el bloque para futuras validaciones
     camposSeleccionados.add(bloque);
-    
     actualizarLista();
-    document.getElementById("contador").innerText = `${seleccionadas.length}/${limite} seleccionadas`;
 }
 
 function actualizarLista() {
@@ -373,41 +373,91 @@ function eliminarSeleccion(index) {
 
 // ===================== PASO 3 Y FINALIZAR =====================
 
-function cargarPaso3(){
-    activar(3)
-    let html = seleccionadas.map((s,i) => `<p>${i+1}. ${s.carrera} - ${s.sede}</p>`).join("")
+function cargarPaso3() {
+    activar(3);
 
-    document.getElementById("contenido").innerHTML=`
+    // Generar las tarjetas de las carreras seleccionadas
+    const htmlCarreras = seleccionadas.map((s, i) => `
+        <div class="tarjeta-resumen">
+            <div class="prioridad-circulo">${i + 1}</div>
+            <div class="info-resumen">
+                <h5>${s.carrera} <span class="tag-final">${s.bloque}</span></h5>
+                <p>
+                    <b>Sede:</b> ${s.sede} | 
+                    <b>Modalidad:</b> ${s.modalidad} | 
+                    <b>Jornada:</b> ${s.jornada}
+                </p>
+            </div>
+        </div>
+    `).join("");
+
+    document.getElementById("contenido").innerHTML = `
         <div class="box">
-            <h3>Confirmación final</h3>
-            <div class="resumen">${html}</div>
-            <button class="btn" onclick="cargarPaso2()">Atrás</button>
-            <button class="btn" onclick="finalizar()">Confirmar inscripción</button>
-        </div>`
+            <h3 style="margin-bottom: 20px;">Revisión de Postulación</h3>
+            
+            <div class="alerta-confirmacion">
+                <h4>⚠️ ¡Atención Estimado(a) Postulante!</h4>
+                <p>
+                    Por favor, revise cuidadosamente las opciones seleccionadas. Una vez que haga clic en 
+                    <b>"Confirmar inscripción"</b>, los datos se guardarán de forma permanente y 
+                    <span style="text-decoration: underline;">no podrá agregar, eliminar o editar</span> sus selecciones para este periodo.
+                </p>
+            </div>
+
+            <div class="resumen-grid">
+                ${htmlCarreras}
+            </div>
+
+            <div class="footer-paso1">
+                <button class="btn" style="background: #64748b;" onclick="cargarPaso2()">
+                    ⬅️ Regresar y Corregir
+                </button>
+                <button class="btn" style="background: #10b981; padding: 10px 30px; font-size: 1rem;" onclick="finalizar()">
+                    ✅ Confirmar inscripción
+                </button>
+            </div>
+        </div>
+    `;
 }
 
-function finalizar(){
-    fetch("http://127.0.0.1:8000/inscripcion/finalizar",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
+function finalizar() {
+    if (seleccionadas.length === 0) {
+        alert("Por favor, selecciona al menos una carrera.");
+        return;
+    }
+
+    fetch("http://127.0.0.1:8000/inscripcion/finalizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
             periodo_id: periodoSeleccionado,
             tipo_documento: tipoDoc,
             cedula: user.cedula,
             nombres: user.nombres,
             apellidos: user.apellidos,
-            carreras: seleccionadas.map(s => s.ofa_id) // Enviamos solo IDs para la tabla intermedia
+            // Ahora enviamos un array de objetos con toda la info necesaria
+            carreras: seleccionadas.map(s => ({
+                ofa_id: s.ofa_id,
+                sede_id: s.sede_id, // El campo que causaba el error
+                nombre_sede: s.sede,
+                carrera_seleccionada: s.carrera
+            }))
         })
     })
-    .then(r=>r.json())
-    .then(r=>{
-        if(r.ok){
+    .then(r => r.json())
+    .then(r => {
+        if (r.ok) {
             alert("Inscripción registrada correctamente");
-            window.location="dashboard.html";
-        }else{
-            alert("Error: " + r.msg);
+            window.location = "dashboard.html";
+        } else {
+            // Mostramos el error detallado que devuelva el servidor
+            alert("Error al guardar: " + (r.msg || r.detail || "Error desconocido"));
         }
     })
+    .catch(err => {
+        console.error("Error en fetch:", err);
+        alert("Error de conexión con el servidor");
+    });
 }
 
 // ===================== UTILIDADES =====================
