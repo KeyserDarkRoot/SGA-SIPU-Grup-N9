@@ -152,7 +152,7 @@ class ExamenService(BaseService):
 
     def fecha_config(self, periodo_id):
 
-        res = self.db.table("config_examen")\
+        res = self._db.table("config_examen")\
                 .select("fecha_inicio")\
                 .eq("periodo_id", periodo_id)\
                 .eq("estado","ACTIVO")\
@@ -162,3 +162,21 @@ class ExamenService(BaseService):
             raise Exception("No existe configuración de examen para este período")
 
         return res.data[0]["fecha_inicio"]
+
+    def listar_aspirantes(self, periodo_id):
+
+        res = self._db.table("inscripciones")\
+            .select("identificacion,sede_id")\
+            .eq("periodo_id", periodo_id)\
+            .execute()
+
+        return res.data
+
+
+    def listar_sedes(self, periodo_id):
+
+        res = self._db.table("sede")\
+            .select("sede_id,nombre_sede")\
+            .execute()
+
+        return res.data

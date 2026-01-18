@@ -25,6 +25,63 @@ def oferta():
           .select("*")\
           .execute().data
 
+@router_inscripcion.get("/config-multi-campos")
+def config_multi_campos():
+    try:
+        # 1. Obtener periodo activo
+        p = db.table("periodo").select("idperiodo").eq("estado", "activo").execute()
+        if not p.data:
+            return {"permitir": True}
+        
+        idp = p.data[0]["idperiodo"]
+
+        # 2. Buscar configuración ACTIVA para ese periodo
+        cfg = db.table("configuracion_sistema")\
+                .select("valor")\
+                .eq("tipo_config", "PERMITIR_MULTI_CAMPOS_CONOCIMIENTO")\
+                .eq("idperiodo", idp)\
+                .eq("estado", "ACTIVO")\
+                .execute()
+        
+        # Si no hay configuración activa, por defecto permitimos (True)
+        if not cfg.data:
+            return {"permitir": True}
+            
+        # Retorna True si el valor es 'SI', False si es 'NO'
+        permitir = (cfg.data[0]["valor"] == "SI")
+        return {"permitir": permitir}
+    except Exception as e:
+        print(f"Error en config: {e}")
+        return {"permitir": True}
+
+@router_inscripcion.get("/ofertas-agrupadas")
+def ofertas_agrupadas():
+    try:
+        res = db.table("oferta_academica").select("*, sede(nombre_sede)").execute()
+        agrupado = {}
+
+        for o in res.data:
+            bloque = o.get('BloqueConocimiento') or "General"
+            carrera = o.get("nombre_carrera")
+
+            if bloque not in agrupado: agrupado[bloque] = {}
+            if carrera not in agrupado[bloque]:
+                agrupado[bloque][carrera] = []
+            
+            jornada_map = {1: "Matutina", 2: "Vespertina", 3: "Diurna"}
+            
+            # Guardamos cada oferta individual con sus propiedades únicas
+            agrupado[bloque][carrera].append({
+                "ofa_id": o["ofa_id"],
+                "sede": o["sede"]["nombre_sede"],
+                "modalidad": o["modalidad"],
+                "jornada_id": o["jornada"],
+                "jornada_texto": jornada_map.get(o["jornada"], "N/A")
+            })
+
+        return agrupado
+    except Exception as e:
+        return {"Error": str(e)}
 
 @router_inscripcion.post("/finalizar")
 def finalizar_inscripcion(d:dict):
