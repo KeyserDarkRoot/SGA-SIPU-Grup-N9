@@ -132,27 +132,55 @@ async function cargarCombos(){
 async function buscarAspirante() {
     const criterio = document.getElementById("txt_buscar").value;
     const div = document.getElementById("resultados_busqueda");
-    if (criterio.length < 3) { div.innerHTML = "<p style='text-align:center;'>Min 3 caracteres...</p>"; return; }
 
-    const res = await fetch("http://127.0.0.1:8000/admin/aspirante/buscar/" + criterio);
-    const aspirantes = await res.json();
-    if (aspirantes.length === 0) { div.innerHTML = "<p style='text-align:center;'>No encontrado.</p>"; return; }
+    if (criterio.length < 3) { 
+        div.innerHTML = "<p style='text-align:center;'>Min 3 caracteres...</p>"; 
+        return; 
+    }
 
-    div.innerHTML = aspirantes.map(a => `
-        <div class="aspirante-card ${a.estado_inscripcion==='INVALIDADO'?'invalidado':''}">
-            <div style="flex:2">
-                <h3 style="margin:0;">${a.nombres} ${a.apellidos}</h3>
-                <p style="margin:5px 0; color:#7f8c8d; font-size:14px;">C.I: ${a.identificacion} | Carrera: <b>${a.carrera_seleccionada}</b></p>
-                <div class="aspirante-tags">
-                    <span class="tag">🏆 Nota: ${a.puntaje_final||0} <i class="fas fa-pencil-alt btn-edit-icon" onclick="editarNota('${a.id_inscripcion}', ${a.puntaje_final||0})"></i></span>
+    try {
+        const res = await fetch("http://127.0.0.1:8000/admin/aspirante/buscar/" + criterio);
+        const aspirantes = await res.json();
+
+        if (aspirantes.length === 0) { 
+            div.innerHTML = "<p style='text-align:center;'>No encontrado.</p>"; 
+            return; 
+        }
+
+        div.innerHTML = aspirantes.map(a => {
+            // Verificamos si está invalidado
+            const esInvalidado = a.estado === 'INVALIDADO';
+
+            return `
+            <div class="aspirante-card ${esInvalidado ? 'invalidado' : ''}">
+                <div style="flex:2">
+                    <h3 style="margin:0;">${a.nombres} ${a.apellidos}</h3>
+                    <p style="margin:5px 0; color:#7f8c8d; font-size:14px;">
+                        C.I: ${a.identificacion} | Carrera: <b>${a.carrera_seleccionada || 'Sin carrera'}</b>
+                    </p>
+                    <div class="aspirante-tags">
+                        <span class="tag" style="background:${esInvalidado ? '#e74c3c' : '#2ecc71'}; color:white;">
+                            ${a.estado}
+                        </span>
+                        <span class="tag">
+                            🏆 Nota: ${a.puntaje_final || 0} 
+                            <i class="fas fa-pencil-alt btn-edit-icon" onclick="editarNota('${a.id_inscripcion}', ${a.puntaje_final || 0})"></i>
+                        </span>
+                    </div>
                 </div>
-            </div>
-            <div style="flex:1; text-align:right;">
-                <button class="${a.estado_inscripcion==='INVALIDADO'?'btn-success':'btn-danger'}" onclick="cambiarEstado('${a.id_inscripcion}', '${a.estado_inscripcion==='INVALIDADO'?'REGISTRADO':'INVALIDADO'}')">
-                 ${a.estado_inscripcion==='INVALIDADO'?'Habilitar':'Invalidar'}
-                </button>
-            </div>
-        </div>`).join("");
+                <div style="flex:1; text-align:right;">
+                    <button class="${esInvalidado ? 'btn-success' : 'btn-danger'}" 
+                        onclick="cambiarEstado('${a.id_inscripcion}', '${esInvalidado ? 'registrado' : 'INVALIDADO'}')">
+                        ${esInvalidado ? 'Habilitar' : 'Invalidar'}
+                    </button>
+                </div>
+            </div>`;
+        }).join("");
+
+    } catch (error) {
+        console.error(error);
+        div.innerHTML = "<p style='color:red; text-align:center'>Error de conexión</p>";
+    }
 }
 
 async function editarNota(idInscripcion, notaActual){

@@ -113,11 +113,26 @@ def buscar_aspirante(criterio: str):
 @router_admin.put("/aspirante/estado")
 def cambiar_estado_aspirante(d: dict):
     try:
-        db.table("inscripciones").update({"estado_inscripcion": d["nuevo_estado"]}).eq("id_inscripcion", d["id_inscripcion"]).execute()
-        return {"ok": True, "msg": "Estado actualizado"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # 1. Recibimos el ID como String (Texto) porque es un UUID
+        id_uuid = str(d["id_inscripcion"]) 
 
+        # 2. Actualizamos la columna 'estado' (según tu foto de la BD)
+        res = db.table("inscripciones")\
+                .update({"estado": d["nuevo_estado"]})\
+                .eq("id_inscripcion", id_uuid)\
+                .execute()
+        
+        # 3. Verificación
+        if not res.data:
+            # Si data está vacío, es que no encontró el ID
+            raise HTTPException(status_code=404, detail="No se encontró el estudiante con ese ID")
+
+        return {"ok": True, "msg": "Estado actualizado correctamente"}
+
+    except Exception as e:
+        print(f"Error al actualizar estado: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    
 @router_admin.put("/aspirante/nota")
 def actualizar_nota(d: dict):
     try:
