@@ -63,9 +63,15 @@ async function listarPeriodos(){
         
         periodos.forEach(p => {
             const esActivo = p.estado === 'activo';
+            
+            // CORRECCIÓN AQUÍ: Usar los nombres exactos de la tabla (fechainicio y fechafin)
+            // Además, formateamos la fecha para que se vea más profesional (YYYY-MM-DD)
+            const f_inicio = p.fechainicio || 'S/N';
+            const f_fin = p.fechafin || 'S/N';
+
             html += `<tr style="border-bottom:1px solid #ddd;">
                         <td style="padding:8px; font-weight:bold;">${p.nombreperiodo}</td>
-                        <td style="padding:8px;">${p.fecha_inicio} a ${p.fecha_fin}</td>
+                        <td style="padding:8px;">${f_inicio} a ${f_fin}</td>
                         <td style="padding:8px;">
                             <span style="background:${esActivo?'#2ecc71':'#95a5a6'}; color:white; padding:3px 8px; border-radius:10px; font-size:11px;">
                                 ${p.estado ? p.estado.toUpperCase() : 'CERRADO'}
@@ -77,7 +83,7 @@ async function listarPeriodos(){
                               `<button style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="cambiarEstadoPeriodo(${p.idperiodo}, 'activo')">Activar</button>`
                             }
                         </td>
-                     </tr>`;
+                      </tr>`;
         });
         html += "</table>";
         div.innerHTML = html;
