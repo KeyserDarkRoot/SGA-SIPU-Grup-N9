@@ -649,4 +649,4 @@ show = function(id) {
     // Mantener las cargas antiguas
     if(id === 'reportes' && typeof cargarReportes === 'function') cargarReportes();
     if(id === 'periodo' && typeof listarPeriodos === 'function') listarPeriodos();
-}
+} 
