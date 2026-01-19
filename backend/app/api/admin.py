@@ -6,7 +6,8 @@ from app.core.reportes import ReporteAsignadosCSV
 from app.core.asignacion_examen import AsignacionMasiva
 from datetime import datetime, date
 import uuid # Importante para manejar IDs
-
+import csv
+import io
 router_admin = APIRouter()
 db = crear_cliente()
 core_masivo = AsignacionMasiva()
@@ -372,6 +373,25 @@ def exportar_asignados(periodo_id: int):
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 
+@router_admin.get("/asignacion/estado/{periodo_id}")
+def estado_asignacion(periodo_id:int):
+
+    try:
+        from app.services.examen_service import ExamenService
+        srv = ExamenService()
+
+        existe = srv.existe_asignacion_periodo(periodo_id)
+
+        return {
+            "ok": True,
+            "ejecutado": existe
+        }
+
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e)
+        }
 # ==========================================
 # 7. DATOS AUXILIARES (COMBOS)
 # ==========================================
@@ -402,3 +422,109 @@ def datos_auxiliares():
     except Exception as e:
         print(f"Error cargando auxiliares: {e}")
         return {"periodos": [], "universidades": [], "sedes": [], "laboratorios": []}
+    # ==========================================
+# 8. DESCARGA DE MATRICES (CSV/EXCEL)
+# ==========================================
+
+@router_admin.get("/reportes/matriz-oferta/{periodo_id}")
+def descargar_matriz_oferta(periodo_id: int):
+    try:
+        # 1. Consultar datos
+        res = db.table("oferta_academica")\
+                .select("*, sede(nombre_sede)")\
+                .eq("periodo_id", periodo_id)\
+                .execute()
+        
+        data = res.data
+        if not data:
+            raise HTTPException(404, detail="No hay datos para este periodo")
+
+        # 2. Crear CSV en memoria
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Cabeceras (Títulos de columnas)
+        writer.writerow(["ID_OFERTA", "CARRERA", "SEDE", "MODALIDAD", "JORNADA", "CUPOS", "ESTADO", "FECHA_PUB"])
+        
+        # 3. Escribir filas
+        for row in data:
+            sede_nombre = row["sede"]["nombre_sede"] if row.get("sede") else "N/A"
+            writer.writerow([
+                row["ofa_id"],
+                row["nombre_carrera"],
+                sede_nombre,
+                row["modalidad"],
+                row["jornada"],
+                row["cupos_disponibles"],
+                row["estado_oferta"],
+                row["fecha_publicacion"]
+            ])
+            
+        output.seek(0)
+        
+        # 4. Enviar archivo
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=Matriz_Oferta_Periodo_{periodo_id}.csv"}
+        )
+
+    except Exception as e:
+        print(f"Error descarga oferta: {e}")
+        raise HTTPException(500, detail=str(e))
+
+@router_admin.get("/reportes/matriz-postulaciones/{periodo_id}")
+def descargar_matriz_postulaciones(periodo_id: int):
+    try:
+        # Estrategia: Buscar carreras de ese periodo y luego inscripciones en esas carreras
+        
+        # 1. Obtener carreras del periodo
+        ofertas = db.table("oferta_academica").select("nombre_carrera").eq("periodo_id", periodo_id).execute().data
+        nombres_carreras = [o["nombre_carrera"] for o in ofertas]
+        
+        if not nombres_carreras:
+             raise HTTPException(404, detail="No hay oferta académica en este periodo")
+
+        # 2. Obtener inscripciones
+        # Usamos .in_() para filtrar solo las carreras de este periodo
+        inscripciones = db.table("inscripciones")\
+                          .select("*")\
+                          .in_("carrera_seleccionada", nombres_carreras)\
+                          .execute().data
+        
+        if not inscripciones:
+             raise HTTPException(404, detail="No hay postulaciones registradas en este periodo")
+
+        # 3. Crear CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Cabeceras
+        writer.writerow(["ID_INSCRIPCION", "CEDULA", "NOMBRES", "APELLIDOS", "CARRERA", "NOTA_FINAL", "ESTADO", "FECHA_INSCRIPCION"])
+        
+        # Datos
+        for row in inscripciones:
+            # Manejo seguro de campos que podrían no existir
+            estado = row.get("estado", row.get("estado_inscripcion", "N/A"))
+            
+            writer.writerow([
+                row["id_inscripcion"],
+                row["identificacion"],
+                row["nombres"],
+                row["apellidos"],
+                row["carrera_seleccionada"],
+                row.get("puntaje_final", 0),
+                estado,
+                row["fecha_inscripcion"]
+            ])
+            
+        output.seek(0)
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=Matriz_Postulaciones_Periodo_{periodo_id}.csv"}
+        )
+
+    except Exception as e:
+        print(f"Error descarga postulaciones: {e}")
+        raise HTTPException(500, detail=str(e))

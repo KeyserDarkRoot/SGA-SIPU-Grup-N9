@@ -45,14 +45,16 @@ class AsignacionExamen(BaseCore):
                 for l in labs:
 
                     usados = self._service.contar_asignados(
-                        l["lab_id"], h["id_horario"], f
+                        l["lab_id"],
+                        h["id_horario"],
+                        f
                     )
 
                     if usados < l["capacidad_equipos"]:
 
                         data = {
-                            "identificacion_aspirante": cedula,
-                            "tipo_examen_id": tipo["id_tipo"],
+                            "identificacion": cedula,
+                            "tipo_examen_id": tipo["id_tipo_examen"],
                             "laboratorio_id": l["lab_id"],
                             "horario_id": h["id_horario"],
                             "fecha_examen": f
@@ -145,7 +147,7 @@ class AsignacionMasiva:
                 for l in labs:
 
                     usados = self.srv.contar_asignados(
-                        l["lab_id"], h["id_horario"]
+                        l["lab_id"], h["id_horario"], f
                     )
 
                     libres = (
@@ -155,11 +157,43 @@ class AsignacionMasiva:
                     for _ in range(libres):
 
                         if idx >= len(asp):
+                            print(" Todos los aspirantes asignados correctamente")
                             return
 
+                        if self.srv.ya_tiene_asignacion(
+                            asp[idx]["identificacion"]
+                        ):
+                            idx += 1
+                            continue
+
+                        # 1. obtener carrera prioridad
+                        carrera = self.srv.obtener_carrera_prioridad(
+                            asp[idx]["identificacion"]
+                        )
+
+                        if not carrera:
+                            print("⚠ Aspirante sin carrera:", asp[idx]["identificacion"])
+                            idx += 1
+                            continue
+
+                        # 2. obtener tipo examen según campo
+                        tipo = self.srv.obtener_tipo_examen(
+                            carrera["ofa_id"]
+                        )
+
+                        if not tipo:
+                            print("⚠ No se encontró tipo examen para:", carrera["ofa_id"])
+                            idx += 1
+                            continue
+
+
                         self.srv.guardar_asignacion({
+
                             "identificacion":
                                 asp[idx]["identificacion"],
+
+                            "tipo_examen_id":
+                                tipo["id_tipo_examen"],
 
                             "laboratorio_id":
                                 l["lab_id"],
@@ -167,10 +201,10 @@ class AsignacionMasiva:
                             "horario_id":
                                 h["id_horario"],
 
-                            "fecha_examen": f.isoformat(),
+                            "fecha_examen": f,
 
-                            "periodo_id": periodo 
-
+                            "periodo_id": periodo
                         })
+
 
                         idx += 1
