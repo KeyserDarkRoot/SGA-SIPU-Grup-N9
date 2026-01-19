@@ -115,19 +115,35 @@ async function crearOferta(){
 }
 
 // 4. COMBOS
+// 4. COMBOS (Actualizada)
 async function cargarCombos(){
     try {
         const res = await fetch("http://127.0.0.1:8000/admin/datos_auxiliares");
         const data = await res.json();
-        const selPer = document.getElementById("o_periodo");
-        if(data.periodos.length > 0) selPer.innerHTML = data.periodos.map(p => `<option value="${p.idperiodo}">${p.nombreperiodo}</option>`).join("");
-        const selSede = document.getElementById("o_sede");
-        if(data.sedes.length > 0) selSede.innerHTML = data.sedes.map(s => `<option value="${s.sede_id}">${s.nombre_sede}</option>`).join("");
-        const selAsig = document.getElementById("a_periodo");
-        if(selAsig && data.periodos.length > 0) selAsig.innerHTML = data.periodos.map(p => `<option value="${p.idperiodo}">${p.nombreperiodo}</option>`).join("");
+        
+        // Función auxiliar para llenar selects
+        const llenar = (id, lista, val, txt) => {
+            const el = document.getElementById(id);
+            if(el && lista.length > 0) {
+                el.innerHTML = lista.map(p => `<option value="${p[val]}">${p[txt]}</option>`).join("");
+            } else if (el) {
+                el.innerHTML = "<option value=''>No hay datos</option>";
+            }
+        };
+
+        // Llenar los combos existentes
+        llenar("o_periodo", data.periodos, "idperiodo", "nombreperiodo");
+        llenar("o_sede", data.sedes, "sede_id", "nombre_sede");
+        llenar("a_periodo", data.periodos, "idperiodo", "nombreperiodo");
+        llenar("conf_periodo", data.periodos, "idperiodo", "nombreperiodo"); // Configuración
+        
+        // ---> ESTA ES LA LÍNEA NUEVA PARA EL FILTRO DE DESCARGA <---
+        llenar("filtro_periodo_descarga", data.periodos, "idperiodo", "nombreperiodo");
+
+        // ... resto de combos (lab_sede, mon_lab, etc.)
+
     } catch (e) { console.error(e); }
 }
-
 // 5. BUSCADOR
 async function buscarAspirante() {
     const criterio = document.getElementById("txt_buscar").value;
@@ -594,16 +610,58 @@ async function enviarDatos(url, metodo, data) {
 
 // Actualizar la función show() para que cargue las listas al abrir las pestañas
 const originalShow = show; // Guardar referencia si existe
-show = function(id) {
-    // Llamar a la lógica original de pestañas
+// Actualizar la función show() para manejar el menú activo y cargas
+function show(id) {
+    // 1. Ocultar todos los paneles
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    
+    // 2. Desactivar todos los botones del menú (quitar clase active)
     document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+    
+    // 3. Mostrar el panel seleccionado
+    const panel = document.getElementById(id);
+    if(panel) panel.classList.add("active");
 
-    // Cargas nuevas
+    // 4. Activar visualmente el botón del menú presionado
+    // El "event" detecta qué botón se clickeó
+    if (event && event.currentTarget && event.currentTarget.classList.contains('menu-btn')) {
+        event.currentTarget.classList.add("active");
+    }
+
+    // 5. Cargas específicas por panel
+    if(id === 'reportes') cargarReportes();
+    if(id === 'periodo') listarPeriodos();
     if(id === 'config') listarConfiguraciones();
     if(id === 'infra') { listarSedes(); listarLabs(); listarMonitores(); }
     
+    // Nota: 'matrices' no necesita carga extra aquí porque el combo de periodos 
+    // ya se llena al inicio con cargarCombos()
+}
+/* =========================================
+   FUNCIÓN PARA DESCARGAR MATRICES
+   ========================================= */
+function descargarMatriz(tipo) {
+    // 1. Obtener el periodo seleccionado
+    const select = document.getElementById("filtro_periodo_descarga");
+    const periodoId = select.value;
+    
+    if (!periodoId) {
+        alert("⚠️ Por favor, selecciona un periodo primero.");
+        return;
+    }
+
+    // 2. Construir la URL según el botón presionado
+    let url = "";
+    if (tipo === 'oferta') {
+        url = `http://127.0.0.1:8000/admin/reportes/matriz-oferta/${periodoId}`;
+    } else if (tipo === 'postulaciones') {
+        url = `http://127.0.0.1:8000/admin/reportes/matriz-postulaciones/${periodoId}`;
+    }
+
+    // 3. Forzar la descarga abriendo la URL
+    // Esto hace que el navegador descargue el archivo automáticamente
+    window.location.href = url;
+}
     // Mantener las cargas antiguas
     if(id === 'reportes' && typeof cargarReportes === 'function') cargarReportes();
     if(id === 'periodo' && typeof listarPeriodos === 'function') listarPeriodos();
