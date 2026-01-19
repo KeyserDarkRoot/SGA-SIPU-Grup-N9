@@ -415,8 +415,6 @@ async function validarPeriodo(){
    btn.disabled = true
    btn.innerText = "Periodo activo (bloqueado)"
  }
- validarAsignacionEjecutada()
-
 }
     
 // Bloquear botón si ya se realizó asignación
@@ -433,31 +431,6 @@ async function bloquearSiYaAsignado(){
  document.getElementById("btnAsignar").disabled = data.existe
 }
 
-
-async function validarAsignacionEjecutada(){
-
- const periodo = document.getElementById("a_periodo").value
-
- if(!periodo) return
-
- const res = await fetch(
-  "http://127.0.0.1:8000/admin/asignacion/estado/"+periodo
- )
-
- const r = await res.json()
-
- const btn = document.getElementById("btnAsignar")
-
- if(r.ejecutado){
-  btn.disabled = true
-  btn.innerHTML = "✔ Ya ejecutado"
-  btn.style.background = "#95a5a6"
- }else{
-  btn.disabled = false
-  btn.innerHTML = "▶ Ejecutar"
-  btn.style.background = "#3498db"
- }
-}
 /* =========================================================
    1. GESTIÓN DE CONFIGURACIÓN DEL SISTEMA
    ========================================================= */
@@ -737,8 +710,4 @@ function descargarMatriz(tipo) {
     // 3. Forzar la descarga abriendo la URL
     // Esto hace que el navegador descargue el archivo automáticamente
     window.location.href = url;
-}
-    // Mantener las cargas antiguas
-    if(id === 'reportes' && typeof cargarReportes === 'function') cargarReportes();
-    if(id === 'periodo' && typeof listarPeriodos === 'function') listarPeriodos();
 }
