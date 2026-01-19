@@ -8,33 +8,39 @@ class ExamenService(BaseService):
 
     def obtener_carrera_prioridad(self, cedula):
 
-        res = self._db.table(
-          "postulacion_registro_carreras"
-        ).select("ofa_id")\
-         .eq("identificacion",cedula)\
-         .order("prioridad_eleccion_carrera")\
-         .limit(1)\
-         .execute()
+    # 1. Obtener id_inscripcion desde inscripciones
+        ins = self._db.table("inscripciones")\
+            .select("id_inscripcion")\
+            .eq("identificacion", cedula)\
+            .limit(1)\
+            .execute()
 
-        return res.data[0] if res.data else None
+        if not ins.data:
+            return None
 
-    def obtener_tipo_examen(self, ofa_id):
+        id_ins = ins.data[0]["id_inscripcion"]
 
-        res = self._db.rpc(
-         "get_tipo_examen",
-         {"p_ofa":ofa_id}
-        ).execute()
+        # 2. Buscar carrera con prioridad 1
+        res = self._db.table("inscripcion_carreras")\
+            .select("ofa_id")\
+            .eq("id_inscripcion", id_ins)\
+            .order("prioridad")\
+            .limit(1)\
+            .execute()
 
         return res.data[0] if res.data else None
 
 
     def guardar_asignacion(self, data):
 
-        res = self._db.table("asignacion_examen")\
+        #  CONVERTIR FECHA
+        if "fecha_examen" in data:
+            data["fecha_examen"] = data["fecha_examen"].isoformat()
+
+        return self._db.table("asignacion_examen")\
             .insert(data)\
             .execute()
 
-        return res.data
     
 
     def obtener_laboratorio_disponible(self):
@@ -129,22 +135,24 @@ class ExamenService(BaseService):
 
 
     # Contar cupos por lab + horario
-    def contar_asignados(self, lab_id, horario_id):
+    def contar_asignados(self, lab_id, horario_id, fecha):
 
         res = self._db.table("asignacion_examen")\
             .select("asignacion_id", count="exact")\
             .eq("laboratorio_id", lab_id)\
             .eq("horario_id", horario_id)\
+            .eq("fecha_examen", fecha)\
             .execute()
 
         return res.count
+
 
     # Verificar si ya tiene asignación
     def ya_tiene_asignacion(self, cedula):
 
         res = self._db.table("asignacion_examen")\
             .select("asignacion_id")\
-            .eq("identificacion_aspirante", cedula)\
+            .eq("identificacion", cedula)\
             .limit(1)\
             .execute()
 
@@ -180,3 +188,41 @@ class ExamenService(BaseService):
             .execute()
 
         return res.data
+
+
+    def existe_asignacion_periodo(self, periodo_id):
+
+        res = self._db.table("asignacion_examen")\
+            .select("asignacion_id")\
+            .eq("periodo_id", periodo_id)\
+            .limit(1)\
+            .execute()
+
+        return True if res.data else False
+    
+
+    def obtener_tipo_examen(self, ofa_id):
+
+        # 1. Obtener id_campo desde oferta_academica
+        ofa = self._db.table("oferta_academica")\
+            .select("id_campo")\
+            .eq("ofa_id", ofa_id)\
+            .limit(1)\
+            .execute()
+
+        if not ofa.data:
+            return None
+
+        id_campo = ofa.data[0]["id_campo"]
+
+        # 2. Obtener tipo de examen desde campo_conocimiento
+        campo = self._db.table("campo_conocimiento")\
+            .select("id_tipo_examen")\
+            .eq("id_campo", id_campo)\
+            .limit(1)\
+            .execute()
+
+        if not campo.data:
+            return None
+
+        return campo.data[0]

@@ -293,3 +293,22 @@ def existe_asignacion(periodo:int):
  return {"existe": True if r.data else False}
 
 
+@router_admin.get("/asignacion/estado/{periodo_id}")
+def estado_asignacion(periodo_id:int):
+
+    try:
+        from app.services.examen_service import ExamenService
+        srv = ExamenService()
+
+        existe = srv.existe_asignacion_periodo(periodo_id)
+
+        return {
+            "ok": True,
+            "ejecutado": existe
+        }
+
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e)
+        }
