@@ -182,35 +182,20 @@ async function crearOferta(){
 }
 
 // 4. COMBOS
-// 4. COMBOS (Actualizada)
 async function cargarCombos(){
     try {
         const res = await fetch("http://127.0.0.1:8000/admin/datos_auxiliares");
         const data = await res.json();
-        
-        // Función auxiliar para llenar selects
-        const llenar = (id, lista, val, txt) => {
-            const el = document.getElementById(id);
-            if(el && lista.length > 0) {
-                el.innerHTML = lista.map(p => `<option value="${p[val]}">${p[txt]}</option>`).join("");
-            } else if (el) {
-                el.innerHTML = "<option value=''>No hay datos</option>";
-            }
-        };
-
-        // Llenar los combos existentes
-        llenar("o_periodo", data.periodos, "idperiodo", "nombreperiodo");
-        llenar("o_sede", data.sedes, "sede_id", "nombre_sede");
-        llenar("a_periodo", data.periodos, "idperiodo", "nombreperiodo");
-        llenar("conf_periodo", data.periodos, "idperiodo", "nombreperiodo"); // Configuración
-        
-        // ---> ESTA ES LA LÍNEA NUEVA PARA EL FILTRO DE DESCARGA <---
-        llenar("filtro_periodo_descarga", data.periodos, "idperiodo", "nombreperiodo");
-
-        // ... resto de combos (lab_sede, mon_lab, etc.)
-
+        const selPer = document.getElementById("o_periodo");
+        if(data.periodos.length > 0) selPer.innerHTML = data.periodos.map(p => `<option value="${p.idperiodo}">${p.nombreperiodo}</option>`).join("");
+        const selSede = document.getElementById("o_sede");
+        if(data.sedes.length > 0) selSede.innerHTML = data.sedes.map(s => `<option value="${s.sede_id}">${s.nombre_sede}</option>`).join("");
+        const selAsig = document.getElementById("a_periodo");
+        if(selAsig && data.periodos.length > 0) selAsig.innerHTML = data.periodos.map(p => `<option value="${p.idperiodo}">${p.nombreperiodo}</option>`).join("");
     } catch (e) { console.error(e); }
+
 }
+
 // 5. BUSCADOR
 async function buscarAspirante() {
     const criterio = document.getElementById("txt_buscar").value;
@@ -408,13 +393,6 @@ async function validarPeriodo(){
     } catch (e) {
         console.error("Error al validar periodo:", e);
     }
- if(per.estado === "cerrado"){
-   btn.disabled = false
-   btn.innerText = "Ejecutar asignación"
- }else{
-   btn.disabled = true
-   btn.innerText = "Periodo activo (bloqueado)"
- }
 }
     
 // Bloquear botón si ya se realizó asignación
