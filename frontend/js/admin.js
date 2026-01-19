@@ -32,25 +32,60 @@ async function cargarStatsInicio(){
 }
 
 // 2. PERIODO (CREAR Y LISTAR)
-async function crearPeriodo(){
-    const data={
-     nombre:document.getElementById("p_nombre").value,
-     inicio:document.getElementById("p_inicio").value,
-     fin:document.getElementById("p_fin").value
+async function crearPeriodo() {
+    const user = JSON.parse(localStorage.getItem("user"));
+    
+    // Si falta el ies_id, damos un mensaje más claro
+    if (!user || !user.ies_id) {
+        console.error("Objeto usuario incompleto:", user);
+        return alert("Tu cuenta no tiene una institución asignada. Contacta al soporte técnico.");
     }
-    if(!data.nombre || !data.inicio || !data.fin) return alert("Complete todo");
 
-    await fetch("http://127.0.0.1:8000/admin/periodo",{
-     method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)
-    })
-    alert("Periodo creado");
-    listarPeriodos(); cargarCombos(); cargarStatsInicio();
+    const data = {
+        nombre: document.getElementById("p_nombre").value,
+        inicio: document.getElementById("p_inicio").value,
+        fin: document.getElementById("p_fin").value,
+        ies_id: user.ies_id
+    };
+
+    if (!data.nombre || !data.inicio || !data.fin) {
+        return alert("Complete todos los campos del periodo");
+    }
+
+    try {
+        const res = await fetch("http://127.0.0.1:8000/admin/periodo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            alert("Periodo creado con éxito para su institución");
+            // Limpiar campos
+            document.getElementById("p_nombre").value = "";
+            document.getElementById("p_inicio").value = "";
+            document.getElementById("p_fin").value = "";
+            
+            // Recargar datos
+            listarPeriodos(); 
+            cargarCombos(); 
+            cargarStatsInicio();
+        } else {
+            const errorData = await res.json();
+            alert("Error al crear: " + (errorData.detail || "Error desconocido"));
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error de conexión al servidor");
+    }
 }
 
 async function listarPeriodos(){
     const div = document.getElementById("lista_periodos");
     div.innerHTML = "Cargando...";
+
     try {
+        // Quitamos el /${user.ies_id} de la URL
         const res = await fetch("http://127.0.0.1:8000/admin/periodos/listar");
         const periodos = await res.json();
         
@@ -63,9 +98,7 @@ async function listarPeriodos(){
         
         periodos.forEach(p => {
             const esActivo = p.estado === 'activo';
-            
-            // CORRECCIÓN AQUÍ: Usar los nombres exactos de la tabla (fechainicio y fechafin)
-            // Además, formateamos la fecha para que se vea más profesional (YYYY-MM-DD)
+            // Usar exactamente los nombres de tu tabla universidad/periodo
             const f_inicio = p.fechainicio || 'S/N';
             const f_fin = p.fechafin || 'S/N';
 
@@ -79,8 +112,8 @@ async function listarPeriodos(){
                         </td>
                         <td style="padding:8px;">
                             ${esActivo ? 
-                              `<button style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="cambiarEstadoPeriodo(${p.idperiodo}, 'cerrado')">Cerrar</button>` : 
-                              `<button style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="cambiarEstadoPeriodo(${p.idperiodo}, 'activo')">Activar</button>`
+                              `<button ... onclick="cambiarEstadoPeriodo(${p.idperiodo}, 'cerrado')">Cerrar</button>` : 
+                              `<button ... onclick="cambiarEstadoPeriodo(${p.idperiodo}, 'activo')">Activar</button>`
                             }
                         </td>
                       </tr>`;
@@ -92,13 +125,26 @@ async function listarPeriodos(){
 
 async function cambiarEstadoPeriodo(id, nuevoEstado){
     if(!confirm(`¿${nuevoEstado === 'activo' ? 'ACTIVAR' : 'CERRAR'} este periodo?`)) return;
+    
+    // URL EXACTA SEGÚN TU admin.py
     const res = await fetch("http://127.0.0.1:8000/admin/periodo/estado", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idperiodo: id, nuevo_estado: nuevoEstado })
+        method: "PUT", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            idperiodo: id,           // Tu backend espera este nombre
+            nuevo_estado: nuevoEstado // Tu backend espera este nombre
+        })
     });
-    if(res.ok){ alert("Estado actualizado"); listarPeriodos(); cargarStatsInicio(); }
-}
 
+    if(res.ok){ 
+        alert("Estado actualizado con éxito"); 
+        await listarPeriodos(); // RECARGA LA LISTA
+        await cargarStatsInicio(); // ACTUALIZA EL DASHBOARD
+    } else {
+        const error = await res.json();
+        alert("Error: " + (error.detail || "No se pudo actualizar"));
+    }
+}
 // 3. OFERTA
 async function crearOferta(){
     const data = {
@@ -309,26 +355,28 @@ async function guardarFechaExamen(){
 
 // Validar estado del período antes de asignar exámenes
 async function validarPeriodo(){
+    const periodoId = document.getElementById("a_periodo").value;
+    if(!periodoId) return;
 
- const periodo = document.getElementById("a_periodo").value
+    try {
+        // En tu admin.py NO tienes /periodos/listar/${user.ies_id}
+        // Tienes /periodos/listar (que trae todos). Vamos a usar esa:
+        const res = await fetch(`http://127.0.0.1:8000/admin/periodos/listar`);
+        const periodos = await res.json();
 
- const res = await fetch(
- "http://127.0.0.1:8000/admin/periodos/listar"
- )
+        const per = periodos.find(p => p.idperiodo == periodoId);
+        const btn = document.getElementById("btnAsignar");
 
- const data = await res.json()
-
- const per = data.find(p => p.idperiodo == periodo)
-
- const btn = document.getElementById("btnAsignar")
-
- if(per.estado === "cerrado"){
-   btn.disabled = false
-   btn.innerText = "Ejecutar asignación"
- }else{
-   btn.disabled = true
-   btn.innerText = "Periodo activo (bloqueado)"
- }
+        if(per && per.estado === "cerrado"){
+            btn.disabled = false;
+            btn.innerText = "Ejecutar asignación";
+        } else {
+            btn.disabled = true;
+            btn.innerText = "Solo se asigna en periodos CERRADOS";
+        }
+    } catch (e) {
+        console.error("Error al validar periodo:", e);
+    }
 }
     
 // Bloquear botón si ya se realizó asignación

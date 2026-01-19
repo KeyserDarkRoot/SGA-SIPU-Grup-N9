@@ -218,24 +218,54 @@ def editar_monitor(d: dict):
 @router_admin.post("/periodo")
 def crear_periodo(d: dict):
     try:
+        # 1. Validar que el ies_id venga en la petición
+        if "ies_id" not in d:
+            raise HTTPException(status_code=400, detail="El ID de la institución (ies_id) es obligatorio.")
+
+        # 2. Instanciar la clase Periodo (Asegúrate de que tu clase app.core.periodo acepte ies_id)
+        # Si tu clase Periodo no soporta ies_id, deberás modificar su constructor o usar db.table directamente
         p = Periodo(None, d["nombre"], d["inicio"], d["fin"])
-        r = p.crear_periodo()
-        return {"ok": True, "msg": "Periodo creado", "data": r}
+        
+        # 3. Preparar el payload para insertar incluyendo el ies_id
+        payload = {
+            "nombreperiodo": d["nombre"],
+            "fechainicio": d["inicio"],
+            "fechafin": d["fin"],
+            "estado": "inactivo",
+            "ies_id": int(d["ies_id"])  # <--- Aquí forzamos la inclusión del ies_id
+        }
+        
+        # 4. Inserción directa en la base de datos
+        res = db.table("periodo").insert(payload).execute()
+        
+        return {"ok": True, "msg": "Periodo creado con éxito", "data": res.data}
+        
     except Exception as e:
-        raise HTTPException(400, detail=str(e))
+        print(f"Error al crear periodo: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router_admin.get("/periodos/listar")
 def listar_periodos_gestion():
     try:
+        # Trae todos los campos (incluyendo fechainicio, fechafin, estado)
+        # Asegúrate de que los nombres en el JS coincidan con estos
         return db.table("periodo").select("*").order("idperiodo", desc=True).execute().data
-    except Exception: return []
+    except Exception as e: 
+        print(f"Error: {e}")
+        return []
 
 @router_admin.put("/periodo/estado")
 def cambiar_estado_periodo(d: dict):
     try:
+        # Si vamos a activar uno, primero cerramos TODOS los demás
         if d["nuevo_estado"] == "activo":
             db.table("periodo").update({"estado": "cerrado"}).neq("idperiodo", 0).execute()
-        db.table("periodo").update({"estado": d["nuevo_estado"]}).eq("idperiodo", d["idperiodo"]).execute()
+        
+        # Ahora activamos/cerramos el seleccionado
+        db.table("periodo").update({
+            "estado": d["nuevo_estado"]
+        }).eq("idperiodo", d["idperiodo"]).execute()
+        
         return {"ok": True, "msg": f"Periodo {d['nuevo_estado']}"}
     except Exception as e:
         raise HTTPException(400, detail=str(e))
