@@ -132,7 +132,6 @@ def cambiar_estado_aspirante(d: dict):
     except Exception as e:
         print(f"Error al actualizar estado: {e}")
         raise HTTPException(status_code=400, detail=str(e))
-    
 @router_admin.put("/aspirante/nota")
 def actualizar_nota(d: dict):
     try:
