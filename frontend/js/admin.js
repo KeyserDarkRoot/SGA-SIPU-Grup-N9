@@ -339,3 +339,245 @@ async function bloquearSiYaAsignado(){
  document.getElementById("btnAsignar").disabled = data.existe
 }
 
+/* =========================================================
+   1. GESTIÓN DE CONFIGURACIÓN DEL SISTEMA
+   ========================================================= */
+async function listarConfiguraciones() {
+    const div = document.getElementById("lista_configs");
+    const res = await fetch("http://127.0.0.1:8000/admin/configuraciones");
+    const data = await res.json();
+
+    if (data.length === 0) { div.innerHTML = "Sin configuraciones."; return; }
+
+    let html = `<table class="table-config"><tr><th>Periodo</th><th>Configuración</th><th>Valor</th><th>Acción</th></tr>`;
+    data.forEach(c => {
+        // Pasamos el objeto completo para editar
+        const objStr = encodeURIComponent(JSON.stringify(c));
+        html += `<tr>
+            <td>${c.periodo ? c.periodo.nombreperiodo : c.idperiodo}</td>
+            <td>${c.tipo_config}</td>
+            <td>${c.valor}</td>
+            <td>
+                <button onclick="cargarFormConfig(decodeURIComponent('${objStr}'))" class="btn-edit"><i class="fas fa-edit"></i></button>
+            </td>
+        </tr>`;
+    });
+    html += "</table>";
+    div.innerHTML = html;
+}
+
+function cargarFormConfig(jsonStr) {
+    const c = JSON.parse(jsonStr);
+    document.getElementById("conf_id").value = c.id_config;
+    document.getElementById("conf_periodo").value = c.idperiodo;
+    document.getElementById("conf_tipo").value = c.tipo_config;
+    document.getElementById("conf_valor").value = c.valor;
+    
+    document.getElementById("txt_accion_conf").innerText = "Editar";
+    document.getElementById("btn_cancelar_conf").style.display = "block";
+}
+
+async function guardarConfig() {
+    const id = document.getElementById("conf_id").value;
+    const data = {
+        idperiodo: document.getElementById("conf_periodo").value,
+        tipo_config: document.getElementById("conf_tipo").value,
+        valor: document.getElementById("conf_valor").value
+    };
+    if (id) data.id_config = id; // Si hay ID, es edición
+
+    const res = await fetch("http://127.0.0.1:8000/admin/configuracion", {
+        method: id ? "PUT" : "POST", // Usamos PUT si es edición
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("Guardado correctamente");
+        limpiarConfig();
+        listarConfiguraciones();
+    } else {
+        alert("Error al guardar");
+    }
+}
+
+function limpiarConfig() {
+    document.getElementById("conf_id").value = "";
+    document.getElementById("conf_valor").value = "";
+    document.getElementById("txt_accion_conf").innerText = "Nueva";
+    document.getElementById("btn_cancelar_conf").style.display = "none";
+}
+
+
+/* =========================================================
+   2. GESTIÓN DE INFRAESTRUCTURA (SEDES, LABS, MONITORES)
+   ========================================================= */
+
+// --- SEDES ---
+async function listarSedes() {
+    const res = await fetch("http://127.0.0.1:8000/admin/sedes/listar"); // Endpoint nuevo
+    const data = await res.json();
+    let html = `<table class="table-config"><tr><th>Nombre</th><th>Capacidad</th><th>Acción</th></tr>`;
+    data.forEach(s => {
+        const objStr = encodeURIComponent(JSON.stringify(s));
+        html += `<tr><td>${s.nombre_sede}</td><td>${s.capacidad_total}</td>
+        <td><button onclick="cargarFormSede(decodeURIComponent('${objStr}'))" class="btn-edit">✏️</button></td></tr>`;
+    });
+    document.getElementById("tabla_sedes").innerHTML = html + "</table>";
+}
+
+function cargarFormSede(json) {
+    const s = JSON.parse(json);
+    document.getElementById("sede_id").value = s.sede_id;
+    document.getElementById("sede_nombre").value = s.nombre_sede;
+    document.getElementById("sede_dir").value = s.direccion;
+    document.getElementById("sede_ies").value = s.ies_id;
+    document.getElementById("sede_cap").value = s.capacidad_total;
+    document.getElementById("btn_cancelar_sede").style.display = "block";
+}
+
+async function guardarSede() {
+    const id = document.getElementById("sede_id").value;
+    const data = {
+        nombre_sede: document.getElementById("sede_nombre").value,
+        direccion: document.getElementById("sede_dir").value,
+        ies_id: document.getElementById("sede_ies").value,
+        capacidad_total: document.getElementById("sede_cap").value
+    };
+    if(id) data.sede_id = id;
+
+    await enviarDatos("http://127.0.0.1:8000/admin/sede", id ? "PUT" : "POST", data);
+    limpiarSede();
+    listarSedes();
+    cargarCombos(); // Recargar combo sedes
+}
+
+function limpiarSede(){
+    document.getElementById("sede_id").value = "";
+    document.getElementById("sede_nombre").value = "";
+    document.getElementById("sede_dir").value = "";
+    document.getElementById("sede_cap").value = "";
+    document.getElementById("btn_cancelar_sede").style.display = "none";
+}
+
+// --- LABORATORIOS ---
+async function listarLabs() {
+    const res = await fetch("http://127.0.0.1:8000/admin/laboratorios/listar");
+    const data = await res.json();
+    let html = `<table class="table-config"><tr><th>Nombre</th><th>Sede</th><th>Piso</th><th>Acción</th></tr>`;
+    data.forEach(l => {
+        const objStr = encodeURIComponent(JSON.stringify(l));
+        html += `<tr><td>${l.nombre_lab}</td><td>${l.sede ? l.sede.nombre_sede : 'N/A'}</td><td>${l.piso}</td>
+        <td><button onclick="cargarFormLab(decodeURIComponent('${objStr}'))" class="btn-edit">✏️</button></td></tr>`;
+    });
+    document.getElementById("tabla_labs").innerHTML = html + "</table>";
+}
+
+function cargarFormLab(json) {
+    const l = JSON.parse(json);
+    document.getElementById("lab_id").value = l.lab_id;
+    document.getElementById("lab_nombre").value = l.nombre_lab;
+    document.getElementById("lab_sede").value = l.sede_id;
+    document.getElementById("lab_piso").value = l.piso;
+    document.getElementById("lab_cap").value = l.capacidad_total || 0; // Ajusta si la columna es distinta
+    document.getElementById("btn_cancelar_lab").style.display = "block";
+}
+
+async function guardarLaboratorio() {
+    const id = document.getElementById("lab_id").value;
+    const data = {
+        nombre_lab: document.getElementById("lab_nombre").value,
+        sede_id: document.getElementById("lab_sede").value,
+        piso: document.getElementById("lab_piso").value,
+        // Asumiendo que laboratorio tiene capacidad, si no, quita esta línea
+        // capacidad: document.getElementById("lab_cap").value 
+    };
+    if(id) data.lab_id = id;
+
+    await enviarDatos("http://127.0.0.1:8000/admin/laboratorio", id ? "PUT" : "POST", data);
+    limpiarLab();
+    listarLabs();
+    cargarCombos(); // Recargar combo laboratorios para monitor
+}
+
+function limpiarLab(){
+    document.getElementById("lab_id").value = "";
+    document.getElementById("lab_nombre").value = "";
+    document.getElementById("btn_cancelar_lab").style.display = "none";
+}
+
+// --- MONITORES ---
+async function listarMonitores() {
+    const res = await fetch("http://127.0.0.1:8000/admin/monitores/listar");
+    const data = await res.json();
+    let html = `<table class="table-config"><tr><th>Nombre</th><th>Teléfono</th><th>Lab</th><th>Acción</th></tr>`;
+    data.forEach(m => {
+        const objStr = encodeURIComponent(JSON.stringify(m));
+        html += `<tr><td>${m.nombre_completo}</td><td>${m.telefono}</td><td>${m.laboratorio ? m.laboratorio.nombre_lab : 'N/A'}</td>
+        <td><button onclick="cargarFormMonitor(decodeURIComponent('${objStr}'))" class="btn-edit">✏️</button></td></tr>`;
+    });
+    document.getElementById("tabla_monitores").innerHTML = html + "</table>";
+}
+
+function cargarFormMonitor(json) {
+    const m = JSON.parse(json);
+    document.getElementById("mon_id").value = m.monitor_id;
+    document.getElementById("mon_nombre").value = m.nombre_completo;
+    document.getElementById("mon_cedula").value = m.identificacion;
+    document.getElementById("mon_tel").value = m.telefono;
+    document.getElementById("mon_lab").value = m.lab_id;
+    document.getElementById("mon_estado").value = m.estado_disponibilidad || 'ACTIVO';
+    document.getElementById("btn_cancelar_mon").style.display = "block";
+}
+
+async function guardarMonitor() {
+    const id = document.getElementById("mon_id").value;
+    const data = {
+        nombre_completo: document.getElementById("mon_nombre").value,
+        identificacion: document.getElementById("mon_cedula").value,
+        telefono: document.getElementById("mon_tel").value,
+        lab_id: document.getElementById("mon_lab").value,
+        estado_disponibilidad: document.getElementById("mon_estado").value
+    };
+    if(id) data.monitor_id = id;
+
+    await enviarDatos("http://127.0.0.1:8000/admin/monitor", id ? "PUT" : "POST", data);
+    limpiarMonitor();
+    listarMonitores();
+}
+
+function limpiarMonitor(){
+    document.getElementById("mon_id").value = "";
+    document.getElementById("mon_nombre").value = "";
+    document.getElementById("mon_cedula").value = "";
+    document.getElementById("mon_tel").value = "";
+    document.getElementById("btn_cancelar_mon").style.display = "none";
+}
+
+// --- UTILIDAD ---
+async function enviarDatos(url, metodo, data) {
+    const res = await fetch(url, {
+        method: metodo,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+    if(res.ok) alert("Operación exitosa");
+    else alert("Error al guardar");
+}
+
+// Actualizar la función show() para que cargue las listas al abrir las pestañas
+const originalShow = show; // Guardar referencia si existe
+show = function(id) {
+    // Llamar a la lógica original de pestañas
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+
+    // Cargas nuevas
+    if(id === 'config') listarConfiguraciones();
+    if(id === 'infra') { listarSedes(); listarLabs(); listarMonitores(); }
+    
+    // Mantener las cargas antiguas
+    if(id === 'reportes' && typeof cargarReportes === 'function') cargarReportes();
+    if(id === 'periodo' && typeof listarPeriodos === 'function') listarPeriodos();
+}

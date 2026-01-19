@@ -19,6 +19,8 @@
     <button onclick="show('periodo')" class="menu-btn"><i class="fas fa-calendar-alt"></i> Períodos</button>
     <button onclick="show('oferta')" class="menu-btn"><i class="fas fa-graduation-cap"></i> Oferta Académica</button>
     <button onclick="show('postulaciones')" class="menu-btn"><i class="fas fa-users"></i> Aspirantes</button>
+    <button onclick="show('config')" class="menu-btn"><i class="fas fa-cogs"></i> Configuración</button>
+<button onclick="show('infra')" class="menu-btn"><i class="fas fa-building"></i> Infraestructura</button>
     <button onclick="show('asignacion')" class="menu-btn"><i class="fas fa-cogs"></i> Asignación Examen</button>
     <button onclick="show('reportes')" class="menu-btn"><i class="fas fa-chart-pie"></i> Reportes</button>
     <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
@@ -103,7 +105,99 @@
         </div>
         <div id="resultados_busqueda" style="margin-top: 20px;"></div>
     </div>
+<div id="config" class="panel">
+        <h2>Configuración del Sistema</h2>
+        
+        <div class="card">
+            <h3><span id="txt_accion_conf">Nueva</span> Configuración</h3>
+            <input type="hidden" id="conf_id"> <div class="form-grid-layout">
+                <div>
+                    <label>Periodo:</label>
+                    <select id="conf_periodo" class="input-form"><option>Cargando...</option></select>
+                </div>
+                <div>
+                    <label>Tipo Configuración:</label>
+                    <select id="conf_tipo" class="input-form">
+                        <option value="FECHA_INICIO_INSCRIPCION">Inicio Inscripción</option>
+                        <option value="FECHA_FIN_INSCRIPCION">Fin Inscripción</option>
+                        <option value="FECHA_INICIO_POSTULACION">Inicio Postulación</option>
+                        <option value="FECHA_FIN_POSTULACION">Fin Postulación</option>
+                        <option value="FECHA_EXAMEN">Fecha Examen</option>
+                        <option value="NOTA_MINIMA">Nota Mínima</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Valor (Fecha/Texto):</label>
+                    <input type="text" id="conf_valor" class="input-form" placeholder="AAAA-MM-DD o Valor">
+                </div>
+            </div>
+            
+            <div style="margin-top:15px; display:flex; gap:10px;">
+                <button class="btn-main" onclick="guardarConfig()">💾 Guardar</button>
+                <button class="btn-main" onclick="limpiarConfig()" style="background:#95a5a6; display:none;" id="btn_cancelar_conf">Cancelar</button>
+            </div>
+        </div>
 
+        <div class="card" style="margin-top:20px;">
+            <h3>Historial de Configuraciones</h3>
+            <div id="lista_configs">Cargando...</div>
+        </div>
+    </div>
+
+    <div id="infra" class="panel">
+        <h2>Gestión de Infraestructura</h2>
+
+    <div class="card" style="margin-bottom:20px;">
+        <h3>🏢 Nueva Sede</h3>
+        <div class="form-grid-layout">
+            <div><label>Nombre Sede</label><input id="sede_nombre" placeholder="Ej: Matriz"></div>
+        
+            <div><label>Universidad (IES)</label><select id="sede_ies"><option>Cargando...</option></select></div>
+        
+            <div><label>Dirección</label><input id="sede_dir" placeholder="Calle..."></div>
+            <div><label>Capacidad Total</label><input id="sede_cap" type="number" placeholder="0"></div>
+        </div>
+        <button class="btn-main" onclick="crearSede()">Guardar Sede</button>
+    </div>
+
+        <div class="card" style="margin-bottom:20px; border-left: 5px solid #9b59b6;">
+            <h3>🖥️ Gestión de Laboratorios</h3>
+            <input type="hidden" id="lab_id"> <div class="form-grid-layout">
+                <input id="lab_nombre" placeholder="Nombre (Ej: Lab 1)" class="input-form">
+                <select id="lab_sede" class="input-form"><option>Seleccione Sede...</option></select>
+                <input id="lab_piso" type="number" placeholder="Piso" class="input-form">
+                <input id="lab_cap" type="number" placeholder="Capacidad" class="input-form">
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button class="btn-main" onclick="guardarLaboratorio()">Guardar Lab</button>
+                <button class="btn-main" onclick="limpiarLab()" id="btn_cancelar_lab" style="background:#95a5a6; display:none;">Cancelar</button>
+            </div>
+
+            <div style="margin-top:15px; max-height: 200px; overflow-y:auto;" id="tabla_labs"></div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid #f1c40f;">
+            <h3>👨‍🏫 Gestión de Monitores</h3>
+            <input type="hidden" id="mon_id"> <div class="form-grid-layout">
+                <input id="mon_nombre" placeholder="Nombre Completo" class="input-form">
+                <input id="mon_cedula" placeholder="Cédula" class="input-form">
+                <input id="mon_tel" placeholder="Teléfono" class="input-form">
+                <select id="mon_lab" class="input-form"><option>Asignar Laboratorio...</option></select>
+                <select id="mon_estado" class="input-form">
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                </select>
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button class="btn-main" onclick="guardarMonitor()">Guardar Monitor</button>
+                <button class="btn-main" onclick="limpiarMonitor()" id="btn_cancelar_mon" style="background:#95a5a6; display:none;">Cancelar</button>
+            </div>
+
+            <div style="margin-top:15px; max-height: 200px; overflow-y:auto;" id="tabla_monitores"></div>
+        </div>
+    </div> 
 <div id="asignacion" class="panel">
         <h2>Motor de Asignación de Examen</h2>
         

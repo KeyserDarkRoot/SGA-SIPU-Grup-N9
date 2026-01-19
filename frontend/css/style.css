@@ -309,6 +309,29 @@ input:focus, select:focus {
     color: #f1c40f;
     margin: 10px 0;
 }
+/* EFECTO ZOOM EN TARJETAS */
+.card, .stat-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
+.card:hover, .stat-card:hover {
+    transform: scale(1.02); /* Aumenta un 2% el tamaño */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* Sombra más profunda */
+    z-index: 10;
+}
 
-
+/* ESTILO TABLAS CONFIGURACIÓN */
+.table-config {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.table-config th, .table-config td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+.table-config th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+}
