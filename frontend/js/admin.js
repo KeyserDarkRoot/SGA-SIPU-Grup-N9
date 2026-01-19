@@ -35,22 +35,41 @@ async function cargarStatsInicio(){
 async function crearPeriodo() {
     const user = JSON.parse(localStorage.getItem("user"));
     
-    // Si falta el ies_id, damos un mensaje más claro
     if (!user || !user.ies_id) {
-        console.error("Objeto usuario incompleto:", user);
         return alert("Tu cuenta no tiene una institución asignada. Contacta al soporte técnico.");
     }
 
-    const data = {
-        nombre: document.getElementById("p_nombre").value,
-        inicio: document.getElementById("p_inicio").value,
-        fin: document.getElementById("p_fin").value,
-        ies_id: user.ies_id
-    };
+    const nombre = document.getElementById("p_nombre").value;
+    const inicioStr = document.getElementById("p_inicio").value;
+    const finStr = document.getElementById("p_fin").value;
 
-    if (!data.nombre || !data.inicio || !data.fin) {
+    if (!nombre || !inicioStr || !finStr) {
         return alert("Complete todos los campos del periodo");
     }
+
+    // --- NUEVAS VALIDACIONES DE FECHA ---
+    const fechaInicio = new Date(inicioStr + "T00:00:00");
+    const fechaFin = new Date(finStr + "T00:00:00");
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Normalizar hoy para comparar solo fechas
+
+    // 1. Validar que inicio sea hoy o futuro
+    if (fechaInicio < hoy) {
+        return alert("Error: La fecha de inicio no puede ser anterior a la fecha actual.");
+    }
+
+    // 2. Validar que fin sea mayor a inicio
+    if (fechaFin <= fechaInicio) {
+        return alert("Error: La fecha de fin debe ser posterior a la fecha de inicio.");
+    }
+    // ------------------------------------
+
+    const data = {
+        nombre: nombre,
+        inicio: inicioStr,
+        fin: finStr,
+        ies_id: user.ies_id
+    };
 
     try {
         const res = await fetch("http://127.0.0.1:8000/admin/periodo", {
@@ -60,23 +79,19 @@ async function crearPeriodo() {
         });
 
         if (res.ok) {
-            alert("Periodo creado con éxito para su institución");
-            // Limpiar campos
+            alert("Periodo creado con éxito");
+            // Limpiar y recargar
             document.getElementById("p_nombre").value = "";
             document.getElementById("p_inicio").value = "";
             document.getElementById("p_fin").value = "";
-            
-            // Recargar datos
             listarPeriodos(); 
-            cargarCombos(); 
-            cargarStatsInicio();
         } else {
             const errorData = await res.json();
-            alert("Error al crear: " + (errorData.detail || "Error desconocido"));
+            alert("Error: " + (errorData.detail || "No se pudo crear"));
         }
     } catch (e) {
         console.error(e);
-        alert("Error de conexión al servidor");
+        alert("Error de conexión");
     }
 }
 
