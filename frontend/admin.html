@@ -20,15 +20,22 @@
     <button onclick="show('oferta')" class="menu-btn"><i class="fas fa-graduation-cap"></i> Oferta Académica</button>
     <button onclick="show('postulaciones')" class="menu-btn"><i class="fas fa-users"></i> Aspirantes</button>
     <button onclick="show('config')" class="menu-btn"><i class="fas fa-cogs"></i> Configuración</button>
-<button onclick="show('infra')" class="menu-btn"><i class="fas fa-building"></i> Infraestructura</button>
+    <button onclick="show('infra')" class="menu-btn"><i class="fas fa-building"></i> Infraestructura</button>
     <button onclick="show('asignacion')" class="menu-btn"><i class="fas fa-cogs"></i> Asignación Examen</button>
     <button onclick="show('reportes')" class="menu-btn"><i class="fas fa-chart-pie"></i> Reportes</button>
+    <button onclick="show('matrices')" class="menu-btn"><i class="fas fa-chart-pie"></i>  Descarga de Matrices </button>
     <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
   </div>
 
   <div class="main">
 
     <div id="inicio" class="panel active">
+        <div style="text-align: center; margin: 40px 0 20px 0;">
+    <h2 style="font-size: 32px; color: #2c3e50; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">
+        Bienvenido al Panel de Administración
+    </h2>
+    <hr style="width: 60px; border: 3px solid #3498db; margin: 10px auto; border-radius: 2px;">
+</div>
         <h2>Resumen General</h2>
         <div class="dashboard-stats">
             <div class="stat-card blue">
@@ -41,10 +48,6 @@
                 <p id="lbl_total">0</p>
                 <i class="fas fa-user-friends icon-bg"></i>
             </div>
-        </div>
-        <h2 style="margin-top: 30px;">Accesos Rápidos</h2>
-        <div class="card">
-            <p>Bienvenido al Panel de Administración.</p>
         </div>
     </div>
 
@@ -241,17 +244,81 @@
             <div id="reporte_asignacion" style="margin-top:30px;"></div>
         </div>
     </div>
-    <div id="reportes" class="panel">
+<div id="reportes" class="panel">
         <h2>Reportes y Estadísticas</h2>
-        <div class="form-grid-layout">
-            <div class="card"><h3 style="text-align:center;">Demanda</h3><canvas id="chartCarreras"></canvas></div>
-            <div class="card"><h3 style="text-align:center;">Estados</h3><div style="width:80%; margin:0 auto;"><canvas id="chartEstados"></canvas></div></div>
-        </div>
-        <button class="btn-main" onclick="cargarReportes()" style="width:200px; margin:20px auto; display:block;">Actualizar</button>
+        
+        <div class="form-grid-layout" style="margin-bottom: 30px;">
+            <div class="card">
+                <h3 style="text-align:center;">Demanda por Carrera</h3>
+                <canvas id="chartCarreras"></canvas>
+            </div>
+            <div class="card">
+    <h3 style="text-align:center;">Estados de Inscripción</h3>
+    <div class="chart-wrapper">
+        <canvas id="chartEstados"></canvas>
     </div>
+</div>
+        </div>
+        <button class="btn-main" onclick="cargarReportes()" style="width:200px; margin:20px auto; display:block;">Actualizar Gráficos</button>
+    </div>
+<div id="reportes" class="panel">
+    <h2>Reportes y Estadísticas</h2>
+    
+    <div class="report-grid">
+        <div class="card">
+            <h3 style="text-align:center;">Demanda por Carrera</h3>
+            <div class="chart-box">
+                <canvas id="chartCarreras"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="text-align:center;">Estados de Inscripción</h3>
+            <div class="chart-box">
+                <canvas id="chartEstados"></canvas>
+            </div>
+        </div>
+    </div>
+    <button class="btn-main" onclick="cargarReportes()" style="width:200px; margin:20px auto; display:block;">Actualizar Gráficos</button>
+</div>
 
+<div id="matrices" class="panel">
+    <h2>Descarga de Matrices</h2>
+
+    <div class="card">
+        <h3>📂 Generación de Archivos CSV</h3>
+        <p style="margin-bottom: 20px;">Selecciona el periodo académico y el tipo de reporte que deseas descargar.</p>
+
+        <div class="form-grid-layout">
+            <div class="full-width">
+                <label>1. Selecciona el Periodo:</label>
+                <select id="filtro_periodo_descarga" class="input-form">
+                    <option value="">Cargando periodos...</option>
+                </select>
+            </div>
+        </div>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+
+        <label style="margin-bottom: 15px; display:block;">2. Selecciona el reporte a descargar:</label>
+
+        <div class="botones-grid">
+            
+            <button class="btn-cuadrado" onclick="descargarMatriz('oferta')">
+                <i class="fas fa-university"></i>
+                <span>Matriz<br>Oferta Académica</span>
+            </button>
+
+            <button class="btn-cuadrado azul" onclick="descargarMatriz('postulaciones')">
+                <i class="fas fa-users"></i>
+                <span>Matriz<br>Postulaciones</span>
+            </button>
+
+        </div>
+    </div>
+</div>
   </div>
 </div>
+
 <script src="js/admin.js"></script>
 </body>
 </html>
