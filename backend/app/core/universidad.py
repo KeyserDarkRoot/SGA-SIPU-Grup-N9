@@ -70,4 +70,3 @@ class MostrarCalendarioAdmision(IMostrarInformacion):
         print("- Examen: 30 de abril")
         print("- Resultados: 10 de mayo")
 
- mdivjeovnoiroiv
